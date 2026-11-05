@@ -1,0 +1,65 @@
+{
+  "name": "svelte-lint",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "The Svelte linter for bun lint: your [lint] rules inside components, plus template and compiler a11y checks. Zero dependencies, cached, with a watch mode.",
+  "author": "Eric Liu (https://github.com/metonym)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "svelte-lint": "dist/cli.js"
+  },
+  "sideEffects": false,
+  "engines": {
+    "bun": ">=1.4.4"
+  },
+  "peerDependencies": {
+    "svelte": ">=3"
+  },
+  "peerDependenciesMeta": {
+    "svelte": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "build": "bun scripts/build.ts",
+    "test": "bun test ./tests",
+    "test:changed": "bivium run --suite unit",
+    "test:package": "bun scripts/test-package.ts",
+    "typecheck": "bun check",
+    "knip": "knip-bun",
+    "fmt": "bun fmt",
+    "lint": "bun fmt --check && bun lint --no-script --max-warnings 0"
+  },
+  "devDependencies": {
+    "bivium": "^0.4.0",
+    "bun-types": "1.4.4",
+    "knip": "^6.43.0",
+    "sveast": "^0.9.7",
+    "svelte": "^5.57.3",
+    "typescript": "^6.0.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/metonym/svelte-lint.git"
+  },
+  "homepage": "https://github.com/metonym/svelte-lint",
+  "bugs": "https://github.com/metonym/svelte-lint/issues",
+  "keywords": [
+    "svelte",
+    "lint",
+    "linter",
+    "bun",
+    "a11y",
+    "eslint",
+    "biome"
+  ]
+}

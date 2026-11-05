@@ -1,0 +1,24 @@
+# A project: [lint] lints the components' scripts and markup expressions,
+# [svelte-lint] turns the template rules on and off.
+[lint.rules]
+"no-var" = "error"
+"prefer-const" = "error"
+"no-unused-vars" = ["error", { args = "all", argsIgnorePattern = "^_" }]
+"no-undef-init" = "error"
+"no-self-assign" = "error"
+"no-unused-labels" = "error"
+"no-restricted-syntax" = [
+  "error",
+  { selector = "CallExpression[callee.property.name='forEach']", message = "Use a for...of loop instead of forEach." },
+]
+
+[[lint.overrides]]
+files = ["src/**/*.svelte"]
+rules = { "no-restricted-imports" = ["error", { paths = [{ name = "svelte", importNames = ["onDestroy"], message = "Return a cleanup from onMount instead." }] }] }
+
+[svelte-lint]
+ignorePatterns = ["src/Ignored.svelte"]
+
+[[svelte-lint.overrides]]
+files = ["src/Legacy.svelte"]
+rules = { "svelte/require-each-key" = "off" }
