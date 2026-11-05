@@ -1,9 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 — 2026-11-04
 
 The first release of svelte-lint, the Svelte linter extracted from
 carbon-components-svelte's `scripts/svelte-lint.ts`.
+
+**Features**
 
 - `bun lint`'s `[lint]` rules in components' scripts and markup
   expressions, with their overrides, `eslint-disable` comments and fixes,
@@ -20,4 +22,4 @@ carbon-components-svelte's `scripts/svelte-lint.ts`.
   `--staged`, `--changed`, `--watch`, and `pretty`, `agent`, `json` and
   `github` output.
 - No dependencies: sveast is bundled, and Svelte is an optional peer.
-  Bun with `bun lint` (1.4.5, or a canary build).
+  It needs a Bun with `bun lint`: 1.4.5, or a canary build.
