@@ -3,7 +3,6 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
-  realpathSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -37,6 +36,8 @@ interface EslintResult {
   messages: EslintMessage[];
 }
 
+const SEPARATOR = /[\\/]/;
+
 const modulePath = (component: Component): string =>
   `${component.file}.${component.module.typescript ? "ts" : "js"}`;
 
@@ -58,13 +59,11 @@ export async function startScriptLint(
   );
   if (components.length === 0) return { done: Promise.resolve(byFile) };
   // Outside the repository, so its `.gitignore` doesn't hide the modules.
-  const named = join(
+  const dir = join(
     tmpdir(),
     `svelte-lint-${createHash("sha1").update(root).digest("hex").slice(0, 8)}`,
   );
-  mkdirSync(named, { recursive: true });
-  // As bun lint reports it: `/var` is `/private/var` on macOS.
-  const dir = realpathSync(named);
+  mkdirSync(dir, { recursive: true });
   writeIfChanged(join(dir, "bunfig.toml"), moduleBunfig(bunfig, root));
   const byModule = new Map<string, Component>();
   for (const component of components)
@@ -96,13 +95,12 @@ export async function startScriptLint(
     ],
     { cwd: dir, stdout: "pipe", stderr: "pipe" },
   );
-  return { done: collectReport(child, report, dir, byModule, byFile) };
+  return { done: collectReport(child, report, byModule, byFile) };
 }
 
 async function collectReport(
   child: Bun.Subprocess<"ignore", "pipe", "pipe">,
   report: string,
-  dir: string,
   byModule: Map<string, Component>,
   byFile: Map<string, Diagnostic[]>,
 ): Promise<Map<string, Diagnostic[]>> {
@@ -118,11 +116,9 @@ async function collectReport(
   const results = JSON.parse(readFileSync(report, "utf8")) as EslintResult[];
   rmSync(report, { force: true });
   for (const result of results) {
-    const path = result.filePath.startsWith(dir)
-      ? result.filePath.slice(dir.length + 1)
-      : result.filePath;
-    const component = byModule.get(path);
-    if (!component || result.messages.length === 0) continue;
+    if (result.messages.length === 0) continue;
+    const component = moduleFor(byModule, result.filePath);
+    if (!component) continue;
     const starts = lineStarts(component.module.code);
     const list = byFile.get(component.file) ?? [];
     for (const message of result.messages) {
@@ -132,6 +128,24 @@ async function collectReport(
     }
   }
   return byFile;
+}
+
+/**
+ * The component whose module bun lint reports at `filePath`: the longest
+ * trailing run of its segments that names a module. Not by stripping the
+ * temporary folder's path, which on Windows bun lint may spell with other
+ * separators, casing or long names than `tmpdir()` does.
+ */
+export function moduleFor<T>(
+  byModule: Map<string, T>,
+  filePath: string,
+): T | undefined {
+  const segments = filePath.split(SEPARATOR);
+  for (let n = 0; n < segments.length; n++) {
+    const component = byModule.get(segments.slice(n).join("/"));
+    if (component) return component;
+  }
+  return undefined;
 }
 
 function writeIfChanged(path: string, text: string): void {

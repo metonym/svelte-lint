@@ -1,7 +1,7 @@
 import { analyze } from "../src/analyze.ts";
 import type { Diagnostic } from "../src/diagnostic.ts";
 import { emit, toSource } from "../src/emit.ts";
-import { isSvelteIdiom } from "../src/script-rules.ts";
+import { isSvelteIdiom, moduleFor } from "../src/script-rules.ts";
 import { lintTemplate } from "../src/template-rules.ts";
 
 const at = (source: string, text: string, from = 0) =>
@@ -105,6 +105,20 @@ describe("isSvelteIdiom", () => {
     const source = `<script>\n  let { a } = $props();\n  let b = 1;\n</script>{a}{b}`;
     expect(idiom(source, diagnostic(source, "prefer-const", "a"))).toBe(true);
     expect(idiom(source, diagnostic(source, "prefer-const", "b"))).toBe(false);
+  });
+});
+
+describe("moduleFor", () => {
+  it("finds a module from bun lint's path, with either separator", () => {
+    const byModule = new Map([
+      ["src/A.svelte.ts", "src/A"],
+      ["A.svelte.ts", "A"],
+    ]);
+    expect(
+      moduleFor(byModule, "C:\\Users\\RUNNER~1\\Temp\\x\\src\\A.svelte.ts"),
+    ).toBe("src/A");
+    expect(moduleFor(byModule, "/private/var/x/A.svelte.ts")).toBe("A");
+    expect(moduleFor(byModule, "/private/var/x/B.svelte.ts")).toBeUndefined();
   });
 });
 
