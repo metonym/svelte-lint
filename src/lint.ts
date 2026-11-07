@@ -222,6 +222,30 @@ export async function lint(
   return { diagnostics: diagnostics.sort(byPosition), sources };
 }
 
+/**
+ * A warning's likely cause, where Svelte's message doesn't say it. Svelte
+ * matches a scoped selector against the template, so a class or
+ * attribute the script sets matches nothing, and Svelte drops the rule.
+ */
+const COMPILER_HINTS: Record<string, string> = {
+  css_unused_selector:
+    "If the script sets the class or attribute, wrap that part in `:global(...)`, as in `.item:global([data-open])`.",
+};
+
+/**
+ * How to fix or silence a compiler warning. Svelte silences a warning in
+ * `<style>` only with a comment above the `<style>` tag, for the whole
+ * block; a comment above the selector doesn't.
+ */
+function compilerHelp(code: string): string {
+  const ignore = `<!-- svelte-ignore ${code} -->`;
+  const where = code.startsWith("css_") ? "the `<style>` tag" : "it";
+  const hint = COMPILER_HINTS[code];
+  return hint
+    ? `${hint} Otherwise fix it, or add ${ignore} above ${where}.`
+    : `Fix it, or add ${ignore} above ${where}.`;
+}
+
 /** A component's problems, with each template rule and compiler warning at its configured severity. */
 function collect(
   analysis: Analysis,
@@ -250,7 +274,7 @@ function collect(
         message: warning.message.split("\n")[0],
         start: warning.start,
         end: warning.end,
-        help: `Fix it, or add <!-- svelte-ignore ${warning.code} --> above it.`,
+        help: compilerHelp(warning.code),
       });
     }
   }

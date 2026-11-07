@@ -112,3 +112,40 @@ describe("lint", () => {
     ]);
   });
 });
+
+describe("compiler warnings", () => {
+  it("hints at :global for a scoped selector the script's attribute misses, and where to silence it", async () => {
+    const dir = await workspace("compiler-help");
+    await writeFile(
+      join(dir, "src/Scoped.svelte"),
+      `<script>
+  let el;
+  $: el?.toggleAttribute("data-open", true);
+</script>
+
+<div bind:this={el} class="item"></div>
+
+<style>
+  .item[data-open] {
+    color: red;
+  }
+</style>
+`,
+    );
+    await writeFile(
+      join(dir, "bunfig.toml"),
+      `${await readFile(join(dir, "bunfig.toml"), "utf8")}
+[[svelte-lint.overrides]]
+files = ["src/Scoped.svelte"]
+rules = { "svelte/compiler" = "error" }
+`,
+    );
+    const { diagnostics } = await lint({ cwd: dir, cache: false });
+    const unused = diagnostics.find(
+      (d) => d.rule === "svelte/css_unused_selector",
+    );
+    expect(unused?.help).toBe(
+      "If the script sets the class or attribute, wrap that part in `:global(...)`, as in `.item:global([data-open])`. Otherwise fix it, or add <!-- svelte-ignore css_unused_selector --> above the `<style>` tag.",
+    );
+  });
+});
