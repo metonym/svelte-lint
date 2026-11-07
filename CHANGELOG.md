@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+**Fixes**
+
+- A compiler warning in `<style>`, such as `css_unused_selector`, said to
+  add `<!-- svelte-ignore -->` above it, which Svelte doesn't read inside
+  `<style>`; it now says above the `<style>` tag.
+- `css_unused_selector` says that a class or attribute the script sets
+  needs `:global(...)`, the usual cause: Svelte drops the rule otherwise.
+
 ## 0.1.0 — 2026-11-04
 
 The first release of svelte-lint, the Svelte linter extracted from
