@@ -62,16 +62,16 @@ svelte-lint --changed            # what differs from the default branch
 svelte-lint --watch              # again on each save
 ```
 
-| Option                  | Description                                                                                                                                |
-| :---------------------- | :----------------------------------------------------------------------------------------------------------------------------------------- |
-| `--fix`                 | Apply the fixes, then lint the fixed components again, up to 10 times                                                                      |
-| `--staged`              | Only the components staged in git                                                                                                          |
-| `--changed[=<ref>]`     | Only the components that differ from `<ref>`, committed or not (default: the default branch)                                               |
-| `--watch`               | Lint again each time a component or `bunfig.toml` changes                                                                                  |
-| `--format <name>`       | `pretty`, `agent`, `json` (ESLint's) or `github` (annotations). Default: `agent` for a coding agent, as `bun lint` picks it, else `pretty` |
-| `--max-warnings <n>`    | Exit 1 on more warnings than this. Default: `[lint]`'s `maxWarnings`                                                                       |
-| `--no-cache`            | Lint every component, and keep no cache                                                                                                    |
-| `--color`, `--no-color` | Force color on or off                                                                                                                      |
+| Option                  | Description                                                                                                                                                                                    |
+| :---------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--fix`                 | Apply the fixes, then lint the fixed components again, up to 10 times                                                                                                                          |
+| `--staged`              | Only the components staged in git                                                                                                                                                              |
+| `--changed[=<ref>]`     | Only the components that differ from `<ref>`, committed or not (default: the default branch)                                                                                                   |
+| `--watch`               | Lint again each time a component or `bunfig.toml` changes                                                                                                                                      |
+| `--format <name>`       | `pretty`, `agent`, `json` (ESLint's) or `github` (annotations). Default: `agent` when `AGENT`, `AI_AGENT`, `CLAUDECODE`, `CODEX_CI` or `CODEX_THREAD_ID` is set, and not to `0`; else `pretty` |
+| `--max-warnings <n>`    | Exit 1 on more warnings than this. Default: `[lint]`'s `maxWarnings`                                                                                                                           |
+| `--no-cache`            | Lint every component, and keep no cache                                                                                                                                                        |
+| `--color`, `--no-color` | Force color on or off                                                                                                                                                                          |
 
 It exits 1 on an error, or on more warnings than `--max-warnings`, and 2 on a bad option. The project is the nearest folder with a `bunfig.toml`, from the current one up, as `bun lint` finds its config. Its components are the `.svelte` files git tracks or would add, or outside a repository, every one but those in `node_modules` and dot folders.
 
