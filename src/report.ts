@@ -20,9 +20,31 @@ const ANSI = {
   reset: "\x1b[0m",
 };
 
-/** `bun lint`'s format: `agent` for a coding agent, as `bun lint` picks it, else `pretty`. */
-export function defaultFormat(): Format {
-  return process.env.AI_AGENT || process.env.CLAUDECODE ? "agent" : "pretty";
+/**
+ * Set by a coding agent: `AGENT` and `CLAUDECODE`, which `bun lint`
+ * reads; `AI_AGENT`, the shared name; and `CODEX_CI` and
+ * `CODEX_THREAD_ID`, which Codex sets.
+ */
+export const AGENT_ENV = [
+  "AGENT",
+  "AI_AGENT",
+  "CLAUDECODE",
+  "CODEX_CI",
+  "CODEX_THREAD_ID",
+];
+
+/**
+ * `agent` when an `AGENT_ENV` variable is set to a value other than
+ * empty or `0`, as `bun lint` reads its own, else `pretty`.
+ */
+export function defaultFormat(
+  env: Record<string, string | undefined> = process.env,
+): Format {
+  const agent = AGENT_ENV.some((name) => {
+    const value = env[name];
+    return value !== undefined && value !== "" && value !== "0";
+  });
+  return agent ? "agent" : "pretty";
 }
 
 /** Each problem with its lines and columns, and its file's lines for a frame. */

@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+**Fixes**
+
+- `--format` defaults to `agent` under Codex (`CODEX_CI` or
+  `CODEX_THREAD_ID`) and when `AGENT` is set, which `bun lint` reads.
+  A variable set to `0` or to nothing no longer counts, as in
+  `bun lint`. The docs said the default matched `bun lint`, but
+  `bun lint` ignores `AI_AGENT`, which is still read.
+
 ## 0.1.1 — 2026-11-06
 
 **Fixes**

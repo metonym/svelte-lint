@@ -19,7 +19,9 @@ the template rules and a11y checks [svelte-lint] turns on.
   --watch               Lint again each time a component or bunfig.toml
                         changes
   --format <name>       pretty, agent, json or github (default: agent for a
-                        coding agent, as bun lint picks it, else pretty)
+                        coding agent: AGENT, AI_AGENT, CLAUDECODE,
+                        CODEX_CI or CODEX_THREAD_ID set, and not to 0;
+                        else pretty)
   --max-warnings <n>    Exit 1 on more warnings than this (default: [lint]'s
                         maxWarnings)
   --no-cache            Lint every component, and keep no cache

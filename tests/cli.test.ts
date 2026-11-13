@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { AGENT_ENV, defaultFormat } from "../src/report.ts";
 import { FIXTURES } from "./shared.ts";
 
 const CLI = join(import.meta.dir, "../src/cli.ts");
@@ -6,7 +7,10 @@ const CLI = join(import.meta.dir, "../src/cli.ts");
 function run(args: string[], cwd = FIXTURES) {
   const result = Bun.spawnSync([process.execPath, CLI, ...args], {
     cwd,
-    env: { ...process.env, AI_AGENT: "", CLAUDECODE: "" },
+    env: {
+      ...process.env,
+      ...Object.fromEntries(AGENT_ENV.map((name) => [name, ""])),
+    },
   });
   return {
     code: result.exitCode,
@@ -14,6 +18,20 @@ function run(args: string[], cwd = FIXTURES) {
     err: result.stderr.toString(),
   };
 }
+
+describe("defaultFormat", () => {
+  it("picks agent under a coding agent, as bun lint does", () => {
+    for (const name of AGENT_ENV)
+      expect(defaultFormat({ [name]: "1" })).toBe("agent");
+    expect(defaultFormat({ AI_AGENT: "claude-code" })).toBe("agent");
+  });
+
+  it("treats an empty value or 0 as unset", () => {
+    expect(defaultFormat({})).toBe("pretty");
+    expect(defaultFormat({ AGENT: "" })).toBe("pretty");
+    expect(defaultFormat({ CLAUDECODE: "0" })).toBe("pretty");
+  });
+});
 
 describe("cli", () => {
   it("exits 1 on a problem and prints bun lint's pretty format", () => {
