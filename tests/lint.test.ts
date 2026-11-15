@@ -1,7 +1,16 @@
 import { existsSync } from "node:fs";
-import { readFile, utimes, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  utimes,
+  writeFile,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { lint } from "../src/api.ts";
+import { lintIgnores } from "../src/config.ts";
 import { brief, FIXTURES, workspace } from "./shared.ts";
 
 const PROBLEMS = [
@@ -58,6 +67,95 @@ describe("lint", () => {
     expect(result.root).toBe(FIXTURES);
     expect(result.files).toEqual(["src/Legacy.svelte"]);
     expect(result.diagnostics).toEqual([]);
+  });
+
+  it("skips the components [lint]'s ignorePatterns skip", async () => {
+    const dir = await workspace("lint-ignore");
+    const bunfig = join(dir, "bunfig.toml");
+    await writeFile(
+      bunfig,
+      `[lint]\nignorePatterns = ["Problems.svelte", "src/S*"]\n\n${await readFile(bunfig, "utf8")}`,
+    );
+    const result = await lint({ cwd: dir, cache: false });
+    expect(result.files.sort()).toEqual([
+      "src/Clean.svelte",
+      "src/Legacy.svelte",
+    ]);
+    expect(result.diagnostics).toEqual([]);
+  });
+
+  it("reads [lint]'s ignorePatterns as bun lint does", async () => {
+    const FILES = ["a/b/t.ts", "c/t.ts", "top.ts"];
+    const CASES = [
+      ["a"],
+      ["b"],
+      ["a/"],
+      ["b/"],
+      ["t.ts/"],
+      ["/a/**"],
+      ["/b"],
+      ["b/**"],
+      ["*/b"],
+      ["**/b/**"],
+      ["a/*/t.ts"],
+      ["t.ts"],
+      ["A"],
+      ["*.ts", "!top.ts"],
+      ["a/**", "!a/b/t.ts"],
+    ];
+    const PREFIX = "svelte-lint-ignore-";
+    const dir = await mkdtemp(join(tmpdir(), PREFIX));
+    try {
+      const linted = await Promise.all(
+        CASES.map(async (patterns, i) => {
+          const config = `[lint]\nignorePatterns = ${JSON.stringify(patterns)}\n[lint.rules]\n"no-var" = "error"\n`;
+          const caseDir = join(dir, String(i));
+          await Promise.all(
+            FILES.map(async (file) => {
+              await mkdir(join(caseDir, file, ".."), { recursive: true });
+              await writeFile(
+                join(caseDir, file),
+                "var x = 1;\nexport { x };\n",
+              );
+            }),
+          );
+          await writeFile(join(caseDir, "bunfig.toml"), config);
+          const run = Bun.spawn(
+            [
+              process.execPath,
+              "lint",
+              "--no-script",
+              "--format",
+              "json",
+              "--no-warn-ignored",
+            ],
+            { cwd: caseDir, stdout: "pipe", stderr: "pipe" },
+          );
+          const out = await new Response(run.stdout).text();
+          await run.exited;
+          const results = out.trim()
+            ? (JSON.parse(out) as { filePath: string; messages: unknown[] }[])
+            : [];
+          return results
+            .filter((r) => r.messages.length > 0)
+            .map((r) => {
+              // The path after the case's folder. Not `relative`: on
+              // Windows, the temp folder can be a short 8.3 name.
+              const path = r.filePath.replaceAll("\\", "/");
+              const at = path.indexOf(`/${i}/`, path.indexOf(PREFIX));
+              return path.slice(at + `/${i}/`.length);
+            })
+            .sort();
+        }),
+      );
+      const ours = CASES.map((patterns) => {
+        const ignored = lintIgnores({ lint: { ignorePatterns: patterns } });
+        return FILES.filter((file) => !ignored(file));
+      });
+      expect(ours).toEqual(linted);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 
   it("fixes what it can, and leaves the rest", async () => {

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+**Fixes**
+
+- `[lint]`'s `ignorePatterns` skip components too, matched as `bun lint`
+  matches them. Only `[svelte-lint]`'s did, so a folder `bun lint`
+  skipped still had its components linted.
+
 ## 0.1.2 — 2026-11-12
 
 **Fixes**
