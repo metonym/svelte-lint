@@ -5,7 +5,8 @@ import type { BunPlugin } from "bun";
 const root = resolve(import.meta.dir, "..");
 const src = join(root, "src");
 const dist = join(root, "dist");
-const ENTRIES = ["index", "cli"];
+// The compile Worker loads by path, so it's an entry of its own.
+const ENTRIES = ["index", "cli", "compile-worker"];
 const DIST_PREFIX = /"(\.\/)?dist\//;
 const IMPORT = /^\s*import\b/m;
 const PACKAGE_JSON = /[\\/]package\.json$/;

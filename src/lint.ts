@@ -148,8 +148,17 @@ export async function lint(
     jobs.length > 0
       ? await Promise.all([import("./analyze.ts"), import("./script-rules.ts")])
       : [null, null];
-  // bun lint runs in its own process, so it lints each batch while the
-  // next one is analyzed here, and the compiler runs after.
+  // The compiler runs in Workers and bun lint in its own process, so
+  // both work while the batches are analyzed here.
+  const compiling =
+    compileJobs.length > 0
+      ? import("./compile.ts").then((c) =>
+          c.compilerWarnings(root, compileJobs),
+        )
+      : Promise.resolve([]);
+  // Settled on its own, so a missing compiler fails the run after the
+  // batches, not as an unhandled rejection.
+  compiling.catch(() => {});
   const analyses: Analysis[] = [];
   const started: { done: Promise<Map<string, Diagnostic[]>> }[] = [];
   const batches = Math.min(BATCHES, Math.ceil(jobs.length / PER_BATCH));
@@ -187,9 +196,7 @@ export async function lint(
     analyses.map((a) => a.file),
     sources,
   );
-  const warnings = analysis
-    ? await analysis.compilerWarnings(root, compileJobs)
-    : [];
+  const warnings = await compiling;
   const scripts = new Map<string, Diagnostic[]>();
   for (const result of await Promise.all(started.map((s) => s.done))) {
     for (const [file, found] of result) scripts.set(file, found);

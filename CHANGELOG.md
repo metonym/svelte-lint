@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+**Performance**
+
+- With `svelte/compiler` on, 200 or more components compile in 2
+  Workers, which start before the components are analyzed. A cold run
+  on 2,251 components takes 1.30s, down from 1.64s.
+
 ## 0.1.2 — 2026-11-12
 
 **Fixes**
