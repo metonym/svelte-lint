@@ -26,6 +26,29 @@ async function git(root: string, ...args: string[]): Promise<string[] | null> {
   return code === 0 ? text.split(LINE_BREAK).filter(Boolean) : null;
 }
 
+/**
+ * Of `files`, relative to `root`, the ones git ignores. A tracked file
+ * isn't, and outside a repository none is.
+ */
+export async function gitIgnored(
+  root: string,
+  files: string[],
+): Promise<Set<string>> {
+  if (files.length === 0) return new Set();
+  const child = Bun.spawn(["git", "check-ignore", "--stdin"], {
+    cwd: root,
+    stdin: new Blob([`${files.join("\n")}\n`]),
+    stdout: "pipe",
+    stderr: "ignore",
+  });
+  const [text, code] = await Promise.all([
+    new Response(child.stdout).text(),
+    child.exited,
+  ]);
+  // 1: none is ignored. 128: not a repository.
+  return new Set(code === 0 ? text.split(LINE_BREAK).filter(Boolean) : []);
+}
+
 /** The ref of the default branch: `origin/HEAD`'s, else `main` or `master`, whichever exists. */
 async function defaultBranch(root: string): Promise<string> {
   const [head] =

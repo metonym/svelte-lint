@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+**Fixes**
+
+- `--watch` skips a new component git ignores, such as one a build
+  writes to `dist/`, as the first run does.
+
 ## 0.1.2 — 2026-11-12
 
 **Fixes**
