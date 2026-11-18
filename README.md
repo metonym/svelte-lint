@@ -1,6 +1,6 @@
 # svelte-lint
 
-> The Svelte linter for `bun lint`: your `[lint]` rules inside components, plus template and compiler a11y checks. Zero dependencies, cached, with a watch mode.
+> The Svelte linter for `bun lint`: your `[lint]` rules inside components, plus template rules and the compiler's warnings, a11y included, without compiling. Zero dependencies, cached, with a watch mode.
 
 `bun lint` lints JavaScript and TypeScript natively, but not `.svelte` files. svelte-lint turns each component into a module `bun lint` can read, runs it with the rules already in your `bunfig.toml`, and maps every problem and fix back to its line and column in the component. It also checks the markup with its own rules and the Svelte compiler's a11y checks, and caches every component's result, so a run lints only what changed.
 
@@ -35,6 +35,7 @@ It needs a Bun with `bun lint`: 1.4.5, or a canary build until it ships.
 | Script rules       | Biome's, in a second config   | ESLint's                      | `bun lint`'s, from your `[lint]`                     |
 | Markup expressions | Biome's rules                 | Some                          | Every `[lint]` rule, fixes included                  |
 | a11y               | 15 HTML rules                 | The compiler's, by compiling  | The compiler's 42, without compiling                 |
+| Compiler warnings  | No                            | By compiling                  | Svelte 5's, without compiling                        |
 | Svelte's idioms    | Overrides that turn rules off | Svelte-aware rules            | The rules stay on, minus what Svelte does on purpose |
 | Svelte 3, 4, 5     | Yes                           | Yes                           | Yes, and their `svelte-ignore` codes                 |
 | Cache              | No                            | Opt-in                        | Every run, by content                                |
@@ -95,18 +96,18 @@ files = ["src/**/*.svelte"]
 rules = { "svelte/require-each-key" = "error" }
 ```
 
-| Rule                                       | Default | Reports                                                                                                    |
-| :----------------------------------------- | :------ | :--------------------------------------------------------------------------------------------------------- |
-| `svelte/require-each-key`                  | error   | An `{#each}` with an item and no key                                                                       |
-| `svelte/no-bind-value-on-checkable-inputs` | error   | `bind:value` on a checkbox or a radio; fixes a checkbox's to `bind:checked`                                |
-| `svelte/button-has-type`                   | error   | A `<button>` without a `type`, which submits a form it's in                                                |
-| `svelte/no-aria-hidden-on-focusable`       | error   | `aria-hidden="true"` on an element the keyboard can still reach                                            |
-| `svelte/a11y`                              | error   | The Svelte compiler's a11y warnings, from [sveast](https://github.com/metonym/sveast)'s port of its checks |
-| `svelte/compiler`                          | off     | The compiler's other warnings, from the project's own `svelte`, by compiling                               |
-
-svelte-check and svelte-typecheck report the compiler's warnings too, so if CI runs either one, leave `svelte/compiler` off and pass it `--fail-on-warnings` instead. Compiling is most of what a cold run costs: on svelte-time's 97 components, turning `svelte/compiler` on takes a run without the cache from 99ms to about 255ms.
+| Rule                                       | Default | Reports                                                                                                                                          |
+| :----------------------------------------- | :------ | :----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `svelte/require-each-key`                  | error   | An `{#each}` with an item and no key                                                                                                             |
+| `svelte/no-bind-value-on-checkable-inputs` | error   | `bind:value` on a checkbox or a radio; fixes a checkbox's to `bind:checked`                                                                      |
+| `svelte/button-has-type`                   | error   | A `<button>` without a `type`, which submits a form it's in                                                                                      |
+| `svelte/no-aria-hidden-on-focusable`       | error   | `aria-hidden="true"` on an element the keyboard can still reach                                                                                  |
+| `svelte/a11y`                              | error   | The Svelte compiler's a11y warnings, from [sveast](https://github.com/metonym/sveast)'s port of its checks                                       |
+| `svelte/compiler`                          | warn    | The compiler's other warnings, such as `css_unused_selector` and `state_referenced_locally`, from sveast's port of Svelte 5's, without compiling |
 
 A severity is `"error"`, `"warn"` or `"off"`. `<!-- svelte-ignore code -->` silences a compiler warning as it does in Svelte: in legacy mode, Svelte 4's `a11y-…` codes count too. A syntax error is always reported.
+
+The compiler's warnings are Svelte 5's, whichever Svelte the project has: a Svelte 3 or 4 component gets the ones Svelte 5 gives it in legacy mode. svelte-lint never loads the project's `svelte`. With a type checker, such as svelte-typecheck or `tsc`, it covers what svelte-check reports; if CI runs svelte-check too, turn `svelte/compiler` off in one of them, or each warning is reported twice.
 
 ### Svelte's idioms
 
@@ -140,9 +141,9 @@ watcher.close();
 
 ## How it works
 
-Each component becomes a module at the same offsets: its `<script>`s as they are, the markup blanked to spaces with its line breaks kept, and the markup's expressions after them. A part `bun lint` doesn't lint, in `eslint-disable` comments, says what the markup and Svelte do to the scripts' names: which ones the markup reads and writes, that a parent writes the props, that `$count` reads `count`, and the names Svelte declares. `bun lint` lints the modules in a temporary folder with your `[lint]`, and each problem and fix maps back to the component. The folder links to the rest of the project, so rules that resolve imports, such as `import/no-cycle` and `import/no-unresolved`, see the same files and packages as in the project. The template rules and a11y checks run on the same parse, by [sveast](https://github.com/metonym/sveast), which is bundled, so the package has no dependencies.
+Each component becomes a module at the same offsets: its `<script>`s as they are, the markup blanked to spaces with its line breaks kept, and the markup's expressions after them. A part `bun lint` doesn't lint, in `eslint-disable` comments, says what the markup and Svelte do to the scripts' names: which ones the markup reads and writes, that a parent writes the props, that `$count` reads `count`, and the names Svelte declares. `bun lint` lints the modules in a temporary folder with your `[lint]`, and each problem and fix maps back to the component. The folder links to the rest of the project, so rules that resolve imports, such as `import/no-cycle` and `import/no-unresolved`, see the same files and packages as in the project. The template rules and a11y checks run on the same parse, by [sveast](https://github.com/metonym/sveast), which is bundled, so the package has no dependencies. So do `svelte/compiler`'s warnings, from sveast's port of Svelte 5's, which gives the same codes, messages and positions as `compile` in a fraction of the time; that parse keeps the `<style>` and the scripts' comments, which they read.
 
-A component whose size and modification time haven't changed since the last run isn't read; one whose content hasn't changed isn't parsed or linted. Results are kept in `node_modules/.cache/svelte-lint`, keyed by svelte-lint's version, `bunfig.toml`, Bun and the project's Svelte. A component with a problem from an `import/` rule is linted every run, since a change to another file can fix it. In CI, restore that folder between runs.
+A component whose size and modification time haven't changed since the last run isn't read; one whose content hasn't changed isn't parsed or linted. Results are kept in `node_modules/.cache/svelte-lint`, keyed by svelte-lint's version, `bunfig.toml` and Bun. A component with a problem from an `import/` rule is linted every run, since a change to another file can fix it. In CI, restore that folder between runs.
 
 ## Limitations
 

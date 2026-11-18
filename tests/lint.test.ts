@@ -313,6 +313,38 @@ rules = { "svelte/compiler" = "error" }
       "If the script sets the class or attribute, wrap that part in `:global(...)`, as in `.item:global([data-open])`. Otherwise fix it, or add <!-- svelte-ignore css_unused_selector --> above the `<style>` tag.",
     );
   });
+
+  it("warns as Svelte 5 does by default, without loading the project's Svelte", async () => {
+    const dir = await workspace("compiler-default");
+    // A Svelte whose compiler throws if anything loads it.
+    const svelte = join(dir, "node_modules/svelte");
+    await mkdir(svelte, { recursive: true });
+    await writeFile(
+      join(svelte, "package.json"),
+      JSON.stringify({
+        name: "svelte",
+        version: "4.2.19",
+        type: "module",
+        exports: { "./compiler": "./compiler.js" },
+      }),
+    );
+    await writeFile(
+      join(svelte, "compiler.js"),
+      `throw new Error("svelte-lint loaded the project's compiler");\n`,
+    );
+    await writeFile(
+      join(dir, "src/Unused.svelte"),
+      `<div class="a"></div>\n\n<style>\n  .b { color: red; }\n</style>\n`,
+    );
+    const { diagnostics } = await lint({
+      cwd: dir,
+      paths: ["src/Unused.svelte"],
+      cache: false,
+    });
+    expect(diagnostics.map((d) => [d.rule, d.severity, d.line])).toEqual([
+      ["svelte/css_unused_selector", "warn", 4],
+    ]);
+  });
 });
 
 describe("rules that read other files", () => {

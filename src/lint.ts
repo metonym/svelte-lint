@@ -23,7 +23,8 @@ const DEFAULT_RULES: Record<string, Severity> = {
     Object.keys(templateRules).map((name) => [name, "error"]),
   ),
   "svelte/a11y": "error",
-  "svelte/compiler": "off",
+  // Warnings, as Svelte reports them.
+  "svelte/compiler": "warn",
 };
 
 export interface LintResult {
@@ -62,7 +63,7 @@ export function openSession(
     ? readFileSync(bunfigPath, "utf8")
     : "";
   const bunfig = Bun.TOML.parse(bunfigText) as Record<string, unknown>;
-  const key = cacheKey(root, bunfigText);
+  const key = cacheKey(bunfigText);
   return {
     bunfig,
     config: templateConfig(bunfig, DEFAULT_RULES),
@@ -110,7 +111,6 @@ export async function lint(
   const severities = new Map<string, Record<string, Severity>>();
   const diagnostics: Diagnostic[] = [];
   const jobs: Job[] = [];
-  const compileJobs: Job[] = [];
   // Unchanged since the last run, by size and time, so not read at all
   // unless its problems are printed. The rest are read in parallel, 2 to
   // 10x faster than one at a time.
@@ -152,9 +152,11 @@ export async function lint(
     }
     const rules = rulesFor(config, file);
     severities.set(file, rules);
-    jobs.push({ file, source: source ?? "" });
-    if (rules["svelte/compiler"] !== "off")
-      compileJobs.push({ file, source: source ?? "" });
+    jobs.push({
+      file,
+      source: source ?? "",
+      compiler: rules["svelte/compiler"] !== "off",
+    });
   }
 
   // The parser and bun lint's runner load only when something changed.
@@ -163,7 +165,7 @@ export async function lint(
       ? await Promise.all([import("./analyze.ts"), import("./script-rules.ts")])
       : [null, null];
   // bun lint runs in its own process, so it lints each batch while the
-  // next one is analyzed here, and the compiler runs after.
+  // next one is analyzed here.
   const analyses: Analysis[] = [];
   const started: { done: Promise<Map<string, Diagnostic[]>> }[] = [];
   const batches = Math.min(BATCHES, Math.ceil(jobs.length / PER_BATCH));
@@ -193,26 +195,22 @@ export async function lint(
     started.push(lintStarted);
   }
   options.onTemplate?.(
-    analyses.flatMap((a) => collect(a, severities.get(a.file) ?? {}, [], [])),
+    analyses.flatMap((a) =>
+      collect(a, severities.get(a.file) ?? {}, [], a.compiler ?? []),
+    ),
     analyses.map((a) => a.file),
     sources,
   );
-  const warnings = analysis
-    ? await analysis.compilerWarnings(root, compileJobs)
-    : [];
   const scripts = new Map<string, Diagnostic[]>();
   for (const result of await Promise.all(started.map((s) => s.done))) {
     for (const [file, found] of result) scripts.set(file, found);
   }
-  const compiled = new Map(
-    compileJobs.map((job, n) => [job.file, warnings[n]]),
-  );
   for (const analyzed of analyses) {
     const found = collect(
       analyzed,
       severities.get(analyzed.file) ?? {},
       scripts.get(analyzed.file) ?? [],
-      compiled.get(analyzed.file) ?? [],
+      analyzed.compiler ?? [],
     );
     cache[analyzed.file] = {
       ...(meta.get(analyzed.file) ?? { hash: "", size: -1, mtime: -1 }),
