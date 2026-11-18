@@ -76,10 +76,13 @@ describe("cli", () => {
     expect(github).toStartWith("::error file=src/Syntax.svelte,line=3,");
   });
 
-  it("rejects a bad flag, or --watch with --fix, with exit code 2", () => {
+  it("rejects a bad flag or flags that clash, with exit code 2", () => {
     expect(run(["--nope"]).code).toBe(2);
     expect(run(["--format=xml"]).code).toBe(2);
     expect(run(["--watch", "--fix"]).code).toBe(2);
+    expect(run(["--staged", "--changed"]).code).toBe(2);
+    expect(run(["--max-warnings", "abc"]).code).toBe(2);
+    expect(run(["--max-warnings=-1"]).code).toBe(2);
     expect(run(["--help"]).out).toStartWith("Usage: svelte-lint");
   });
 });
