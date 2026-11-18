@@ -314,3 +314,98 @@ rules = { "svelte/compiler" = "error" }
     );
   });
 });
+
+describe("rules that read other files", () => {
+  const IMPORT_RULES = `
+[[lint.overrides]]
+files = ["src/**"]
+rules = { "import/no-cycle" = "error", "import/no-unresolved" = "error" }
+`;
+
+  it("resolves the project's files and packages from a component", async () => {
+    const dir = await workspace("resolve");
+    await writeFile(
+      join(dir, "bunfig.toml"),
+      `${await readFile(join(dir, "bunfig.toml"), "utf8")}${IMPORT_RULES}`,
+    );
+    await writeFile(join(dir, "src/util.js"), "export const x = 1;\n");
+    await writeFile(
+      join(dir, "src/Uses.svelte"),
+      `<script>
+  import { x } from "./util.js";
+  import { onMount } from "svelte";
+  import Clean from "./Clean.svelte";
+  onMount(() => x);
+</script>
+
+<Clean />
+`,
+    );
+    const { diagnostics } = await lint({
+      cwd: dir,
+      paths: ["src/Uses.svelte"],
+      cache: false,
+    });
+    expect(diagnostics.map(brief)).toEqual([]);
+  });
+
+  it("finds a cycle through a module, and forgets it once the cycle is gone", async () => {
+    const dir = await workspace("cycle");
+    await writeFile(
+      join(dir, "bunfig.toml"),
+      `${await readFile(join(dir, "bunfig.toml"), "utf8")}${IMPORT_RULES}`,
+    );
+    const a = join(dir, "src/A.svelte");
+    await writeFile(
+      a,
+      `<script>\n  import { b } from "./b.js";\n  b;\n</script>\n`,
+    );
+    await writeFile(
+      join(dir, "src/b.js"),
+      `import A from "./A.svelte";\nexport const b = A;\n`,
+    );
+    const paths = ["src/A.svelte"];
+    expect((await lint({ cwd: dir, paths })).diagnostics.map(brief)).toEqual([
+      "src/A.svelte:2 import/no-cycle",
+    ]);
+    // A is the same, but b.js no longer imports it.
+    await writeFile(join(dir, "src/b.js"), "export const b = 1;\n");
+    expect((await lint({ cwd: dir, paths })).diagnostics).toEqual([]);
+  });
+
+  it("forgets a deleted component's imports", async () => {
+    const dir = await workspace("deleted");
+    await writeFile(
+      join(dir, "bunfig.toml"),
+      `${await readFile(join(dir, "bunfig.toml"), "utf8")}${IMPORT_RULES}`,
+    );
+    const a = join(dir, "src/A.svelte");
+    const b = join(dir, "src/B.svelte");
+    await writeFile(
+      a,
+      `<script>\n  import B from "./B.svelte";\n</script>\n\n<B />\n`,
+    );
+    await writeFile(
+      b,
+      `<script>\n  import A from "./A.svelte";\n</script>\n\n<A />\n`,
+    );
+    expect(
+      (await lint({ cwd: dir, cache: false })).diagnostics
+        .map(brief)
+        .filter((d) => d.includes("import/")),
+    ).toEqual([
+      "src/A.svelte:2 import/no-cycle",
+      "src/B.svelte:2 import/no-cycle",
+    ]);
+    await rm(b);
+    await writeFile(
+      a,
+      `<script>\n  import B from "./B.svelte";\n</script>\n\n<B />\n<p></p>\n`,
+    );
+    expect(
+      (
+        await lint({ cwd: dir, paths: ["src/A.svelte"], cache: false })
+      ).diagnostics.map(brief),
+    ).toEqual(["src/A.svelte:2 import/no-unresolved"]);
+  });
+});

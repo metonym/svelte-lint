@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+**Fixes**
+
+- Rules that resolve imports, such as `import/no-unresolved` and
+  `import/no-cycle`, see the project from a component: its other files,
+  its packages, and the components no run has linted yet. Before, a
+  component's imports resolved only to other components' modules.
+  `import/no-unresolved` reported thousands of false errors in a large
+  project, and `import/no-cycle` missed a cycle through a `.js` file.
+- A deleted component's module is removed, so `import/no-cycle` no
+  longer reports a cycle through it.
+- A component with a problem from an `import/` rule is linted every
+  run, so the problem goes away once another file fixes it. Before,
+  the cache kept it until the component changed.
+
 ## 0.1.3 — 2026-11-18
 
 **Fixes**

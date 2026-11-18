@@ -1,9 +1,12 @@
 import { createHash } from "node:crypto";
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -12,6 +15,7 @@ import type { Analysis } from "./analyze.ts";
 import { moduleBunfig } from "./config.ts";
 import { type Diagnostic, type Fix, lineStarts, offset } from "./diagnostic.ts";
 import { toSource } from "./emit.ts";
+import { mirror } from "./mirror.ts";
 
 /** A component and its module, for `bun lint`. */
 export interface Component {
@@ -42,15 +46,45 @@ const modulePath = (component: Component): string =>
   `${component.file}.${component.module.typescript ? "ts" : "js"}`;
 
 /**
+ * The temporary folder as the file system spells it. On Windows,
+ * `tmpdir()` may use short names, such as `RUNNER~1`, which an import
+ * resolves to the long ones: a module seen under both spellings is two
+ * modules, and `import/no-cycle` finds no cycle through it.
+ */
+const TMP = realpathSync.native(tmpdir());
+
+/** The folder of modules for `root`: outside it, so its `.gitignore` doesn't hide them. */
+const moduleDir = (root: string): string =>
+  join(
+    TMP,
+    `svelte-lint-${createHash("sha1").update(root).digest("hex").slice(0, 8)}`,
+  );
+
+/**
+ * Readies the folder of modules for a run that lints `files`, the
+ * components a run selected: its `bunfig.toml`, and the project around
+ * the modules, so imports resolve as they do in the project.
+ */
+export function prepareModules(
+  root: string,
+  bunfig: Record<string, unknown>,
+  files: string[],
+): void {
+  const dir = moduleDir(root);
+  mkdirSync(dir, { recursive: true });
+  writeIfChanged(join(dir, "bunfig.toml"), moduleBunfig(bunfig, root));
+  mirror(root, dir, files);
+}
+
+/**
  * Starts linting the components' scripts and markup expressions with
- * `bun lint`, using `[lint]` from `bunfig.toml`: it returns once the
+ * `bun lint`, in the folder `prepareModules` readied: it returns once the
  * modules are written and `bun lint` runs, so the caller can analyze more
  * components meanwhile. `done` has the problems mapped back to the
  * components, by file. Each batch needs its own `id`.
  */
 export async function startScriptLint(
   root: string,
-  bunfig: Record<string, unknown>,
   components: Component[],
   id = 0,
 ): Promise<{ done: Promise<Map<string, Diagnostic[]>> }> {
@@ -58,13 +92,7 @@ export async function startScriptLint(
     components.map((c) => [c.file, []]),
   );
   if (components.length === 0) return { done: Promise.resolve(byFile) };
-  // Outside the repository, so its `.gitignore` doesn't hide the modules.
-  const dir = join(
-    tmpdir(),
-    `svelte-lint-${createHash("sha1").update(root).digest("hex").slice(0, 8)}`,
-  );
-  mkdirSync(dir, { recursive: true });
-  writeIfChanged(join(dir, "bunfig.toml"), moduleBunfig(bunfig, root));
+  const dir = moduleDir(root);
   const byModule = new Map<string, Component>();
   for (const component of components)
     byModule.set(modulePath(component), component);
@@ -76,9 +104,14 @@ export async function startScriptLint(
   // In parallel, 3x faster than one at a time. bun lint keeps no cache, so
   // there's no modification time to preserve by skipping unchanged ones.
   await Promise.all(
-    [...byModule].map(([path, component]) =>
-      Bun.write(join(dir, path), component.module.code),
-    ),
+    [...byModule].map(async ([path, component]) => {
+      await Bun.write(join(dir, path), component.module.code);
+      // The link `mirror` made stands in for the module until now. Only
+      // ever a link: the component itself is in the project.
+      const link = join(dir, component.file);
+      if (lstatSync(link, { throwIfNoEntry: false })?.isSymbolicLink())
+        unlinkSync(link);
+    }),
   );
   // Per process too: another run, such as `--watch`, may lint the same project.
   const report = join(dir, `.report-${process.pid}-${id}.json`);
