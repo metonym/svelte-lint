@@ -4,6 +4,7 @@ import {
   lstatSync,
   mkdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   unlinkSync,
   writeFileSync,
@@ -44,10 +45,18 @@ const SEPARATOR = /[\\/]/;
 const modulePath = (component: Component): string =>
   `${component.file}.${component.module.typescript ? "ts" : "js"}`;
 
+/**
+ * The temporary folder as the file system spells it. On Windows,
+ * `tmpdir()` may use short names, such as `RUNNER~1`, which an import
+ * resolves to the long ones: a module seen under both spellings is two
+ * modules, and `import/no-cycle` finds no cycle through it.
+ */
+const TMP = realpathSync.native(tmpdir());
+
 /** The folder of modules for `root`: outside it, so its `.gitignore` doesn't hide them. */
 const moduleDir = (root: string): string =>
   join(
-    tmpdir(),
+    TMP,
     `svelte-lint-${createHash("sha1").update(root).digest("hex").slice(0, 8)}`,
   );
 
