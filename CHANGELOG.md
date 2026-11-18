@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+**Fixes**
+
+- `--max-warnings` takes a whole number of 0 or more and exits 2 on
+  anything else. `abc` was read as no limit.
+- `--staged` with `--changed` exits 2. `--staged` won without a word.
+
 ## 0.1.2 — 2026-11-12
 
 **Fixes**
