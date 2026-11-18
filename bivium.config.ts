@@ -30,13 +30,20 @@ export default defineConfig({
   // fixtures it lints or copies to a temp workspace.
   edges: {
     "tests/cli.test.ts": "src/cli.ts",
+    // Starts the compile Worker by path, not by an import.
+    "src/compile.ts": "src/compile-worker.ts",
     // Builds and packs the package, then lints the fixtures with it.
     "scripts/test-package.ts": "scripts/build.ts",
-    "scripts/build.ts": ["src/{index,cli}.ts", "src/types.ts", "package.json"],
+    "scripts/build.ts": [
+      "src/{index,cli,compile-worker}.ts",
+      "src/types.ts",
+      "package.json",
+    ],
   },
   reads: {
     "tests/shared.ts": fixtures,
     "tests/cli.test.ts": fixtures,
+    "tests/compile.test.ts": fixtures,
     "tests/lint.test.ts": fixtures,
     "tests/watch.test.ts": fixtures,
     "scripts/test-package.ts": fixtures,

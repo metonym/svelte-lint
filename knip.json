@@ -1,6 +1,10 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["src/{index,cli,compile-worker}.ts", "scripts/*.ts", "bivium.config.ts"],
+  "entry": [
+    "src/{index,cli,compile-worker}.ts",
+    "scripts/*.ts",
+    "bivium.config.ts"
+  ],
   "project": ["src/**/*.ts", "tests/**/*.ts", "scripts/**/*.ts"],
   "ignore": ["tests/fixtures*/**", "tests/.tmp/**"],
   "ignoreDependencies": ["svelte"]
