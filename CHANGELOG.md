@@ -7,6 +7,8 @@
 - `--max-warnings` takes a whole number of 0 or more and exits 2 on
   anything else. `abc` was read as no limit.
 - `--staged` with `--changed` exits 2. `--staged` won without a word.
+- `--watch` skips a new component git ignores, such as one a build
+  writes to `dist/`, as the first run does.
 
 ## 0.1.2 — 2026-11-12
 
