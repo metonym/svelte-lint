@@ -76,10 +76,24 @@ describe("cli", () => {
     expect(github).toStartWith("::error file=src/Syntax.svelte,line=3,");
   });
 
-  it("rejects a bad flag, or --watch with --fix, with exit code 2", () => {
+  it("rejects a bad flag or flags that clash, with exit code 2", () => {
     expect(run(["--nope"]).code).toBe(2);
     expect(run(["--format=xml"]).code).toBe(2);
     expect(run(["--watch", "--fix"]).code).toBe(2);
+    expect(run(["--staged", "--changed"]).code).toBe(2);
+    expect(run(["--max-warnings", "abc"]).code).toBe(2);
+    expect(run(["--max-warnings=-1"]).code).toBe(2);
     expect(run(["--help"]).out).toStartWith("Usage: svelte-lint");
+  });
+
+  it("exits 2 on a path that doesn't exist, and warns of a named file it skips", () => {
+    const missing = run(["--no-cache", "src/Nope.svelte"]);
+    expect(missing.code).toBe(2);
+    expect(missing.err).toContain("src/Nope.svelte: no such file or folder");
+    const ignored = run(["--no-cache", "--no-color", "src/Ignored.svelte"]);
+    expect(ignored.code).toBe(0);
+    expect(ignored.err).toContain(
+      "warning: src/Ignored.svelte isn't linted: ignorePatterns in bunfig.toml skip it.",
+    );
   });
 });

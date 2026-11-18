@@ -2,7 +2,12 @@ import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Analysis, CompilerWarning, Job } from "./analyze.ts";
 import { cacheKey, type Entry, hash, loadCache, saveCache } from "./cache.ts";
-import { rulesFor, type Severity, templateConfig } from "./config.ts";
+import {
+  lintIgnores,
+  rulesFor,
+  type Severity,
+  templateConfig,
+} from "./config.ts";
 import type { Diagnostic } from "./diagnostic.ts";
 import type { Component } from "./script-rules.ts";
 import { templateRules } from "./template-rules.ts";
@@ -26,6 +31,14 @@ export interface LintResult {
   diagnostics: Diagnostic[];
   sources: Map<string, string>;
 }
+
+/**
+ * Whether a cached result has a problem from a rule that reads other
+ * files, such as `import/no-cycle`, which a change elsewhere can fix.
+ * Such a component is linted again each run.
+ */
+const readsOtherFiles = (entry: Entry): boolean =>
+  entry.diagnostics.some((d) => d.rule?.startsWith("import/"));
 
 const byPosition = (a: Diagnostic, b: Diagnostic) =>
   a.file.localeCompare(b.file) || a.start - b.start;
@@ -106,6 +119,7 @@ export async function lint(
     const cached = cache[file];
     return (
       cached != null &&
+      !readsOtherFiles(cached) &&
       cached.size === stats[n].size &&
       cached.mtime === stats[n].mtimeMs
     );
@@ -130,7 +144,7 @@ export async function lint(
     const sourceHash = hash(source ?? "");
     meta.set(file, { hash: sourceHash, size, mtime });
     // Touched, as by a checkout, but the same.
-    if (cached?.hash === sourceHash) {
+    if (cached?.hash === sourceHash && !readsOtherFiles(cached)) {
       cache[file] = { ...cached, size, mtime };
       changed = true;
       diagnostics.push(...cached.diagnostics);
@@ -155,6 +169,7 @@ export async function lint(
   const analyses: Analysis[] = [];
   const started: { done: Promise<Map<string, Diagnostic[]>> }[] = [];
   const batches = Math.min(BATCHES, Math.ceil(jobs.length / PER_BATCH));
+  scriptRules?.prepareModules(root, bunfig, files);
   for (let n = 0; analysis && scriptRules && n < batches; n++) {
     const batch = jobs
       .slice(
@@ -176,12 +191,7 @@ export async function lint(
     );
     // This awaits the writes and the spawn, not the lint.
     // eslint-disable-next-line no-await-in-loop
-    const lintStarted = await scriptRules.startScriptLint(
-      root,
-      bunfig,
-      components,
-      n,
-    );
+    const lintStarted = await scriptRules.startScriptLint(root, components, n);
     started.push(lintStarted);
   }
   options.onTemplate?.(
@@ -323,7 +333,10 @@ export async function lintAndFix(
   return result;
 }
 
-/** `files` that exist and that `[svelte-lint]`'s `ignorePatterns` don't skip. */
+/**
+ * `files` that exist and that neither `[svelte-lint]`'s `ignorePatterns`
+ * nor `[lint]`'s skip.
+ */
 export function filterComponents(root: string, files: string[]): string[] {
   const bunfigPath = join(root, "bunfig.toml");
   const bunfig = existsSync(bunfigPath)
@@ -334,8 +347,11 @@ export function filterComponents(root: string, files: string[]): string[] {
     DEFAULT_RULES,
   );
   const ignore = config.ignorePatterns.map((p) => new Bun.Glob(p));
+  const lintIgnored = lintIgnores(bunfig as Record<string, unknown>);
   return [...new Set(files)].filter(
     (file) =>
-      existsSync(join(root, file)) && !ignore.some((glob) => glob.match(file)),
+      existsSync(join(root, file)) &&
+      !ignore.some((glob) => glob.match(file)) &&
+      !lintIgnored(file),
   );
 }
