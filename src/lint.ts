@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import type { Analysis, CompilerWarning, Job } from "./analyze.ts";
 import { cacheKey, type Entry, hash, loadCache, saveCache } from "./cache.ts";
 import { rulesFor, type Severity, templateConfig } from "./config.ts";
@@ -18,7 +18,8 @@ const DEFAULT_RULES: Record<string, Severity> = {
     Object.keys(templateRules).map((name) => [name, "error"]),
   ),
   "svelte/a11y": "error",
-  "svelte/compiler": "off",
+  // Warnings, as Svelte reports them.
+  "svelte/compiler": "warn",
 };
 
 export interface LintResult {
@@ -38,35 +39,6 @@ export interface Session {
   config: ReturnType<typeof templateConfig>;
   key: string;
   cache: Record<string, Entry>;
-  /**
-   * Whether `svelte/compiler`'s warnings come from sveast's port of
-   * Svelte 5's, rather than from compiling with the project's Svelte.
-   */
-  ported: boolean;
-}
-
-/**
- * The major version of the Svelte `root` resolves, or `undefined` when
- * it has none: from its `package.json`, found up from the compiler,
- * since Svelte 3 doesn't export it.
- */
-function svelteMajor(root: string): number | undefined {
-  let path: string;
-  try {
-    path = Bun.resolveSync("svelte/compiler", root);
-  } catch {
-    return undefined;
-  }
-  for (let dir = dirname(path); dir !== dirname(dir); dir = dirname(dir)) {
-    const file = join(dir, "package.json");
-    if (!existsSync(file)) continue;
-    const pkg = JSON.parse(readFileSync(file, "utf8")) as {
-      name?: string;
-      version?: string;
-    };
-    if (pkg.name === "svelte") return Number.parseInt(pkg.version ?? "", 10);
-  }
-  return undefined;
 }
 
 export function openSession(
@@ -78,16 +50,12 @@ export function openSession(
     ? readFileSync(bunfigPath, "utf8")
     : "";
   const bunfig = Bun.TOML.parse(bunfigText) as Record<string, unknown>;
-  const key = cacheKey(root, bunfigText);
+  const key = cacheKey(bunfigText);
   return {
     bunfig,
     config: templateConfig(bunfig, DEFAULT_RULES),
     key,
     cache: options.cache ? loadCache(root, key) : {},
-    // sveast ports Svelte 5's warnings. Svelte 3 and 4 warn differently,
-    // and a later major may, so they compile. Without Svelte, there's no
-    // compiler to ask, and the port needs none.
-    ported: (svelteMajor(root) ?? 5) === 5,
   };
 }
 
@@ -122,7 +90,7 @@ export async function lint(
   options: LintOptions = { cache: true },
 ): Promise<LintResult> {
   const session = options.session ?? openSession(root, options);
-  const { bunfig, config, key, cache, ported } = session;
+  const { bunfig, config, key, cache } = session;
 
   const sources = new Map<string, string>();
   const meta = new Map<string, { hash: string; size: number; mtime: number }>();
@@ -130,7 +98,6 @@ export async function lint(
   const severities = new Map<string, Record<string, Severity>>();
   const diagnostics: Diagnostic[] = [];
   const jobs: Job[] = [];
-  const compileJobs: Job[] = [];
   // Unchanged since the last run, by size and time, so not read at all
   // unless its problems are printed. The rest are read in parallel, 2 to
   // 10x faster than one at a time.
@@ -171,9 +138,11 @@ export async function lint(
     }
     const rules = rulesFor(config, file);
     severities.set(file, rules);
-    const compiler = rules["svelte/compiler"] !== "off";
-    jobs.push({ file, source: source ?? "", compiler: compiler && ported });
-    if (compiler && !ported) compileJobs.push({ file, source: source ?? "" });
+    jobs.push({
+      file,
+      source: source ?? "",
+      compiler: rules["svelte/compiler"] !== "off",
+    });
   }
 
   // The parser and bun lint's runner load only when something changed.
@@ -182,8 +151,7 @@ export async function lint(
       ? await Promise.all([import("./analyze.ts"), import("./script-rules.ts")])
       : [null, null];
   // bun lint runs in its own process, so it lints each batch while the
-  // next one is analyzed here, and the compiler, for Svelte 3 and 4,
-  // runs after.
+  // next one is analyzed here.
   const analyses: Analysis[] = [];
   const started: { done: Promise<Map<string, Diagnostic[]>> }[] = [];
   const batches = Math.min(BATCHES, Math.ceil(jobs.length / PER_BATCH));
@@ -223,22 +191,16 @@ export async function lint(
     analyses.map((a) => a.file),
     sources,
   );
-  const warnings = analysis
-    ? await analysis.compilerWarnings(root, compileJobs)
-    : [];
   const scripts = new Map<string, Diagnostic[]>();
   for (const result of await Promise.all(started.map((s) => s.done))) {
     for (const [file, found] of result) scripts.set(file, found);
   }
-  const compiled = new Map(
-    compileJobs.map((job, n) => [job.file, warnings[n]]),
-  );
   for (const analyzed of analyses) {
     const found = collect(
       analyzed,
       severities.get(analyzed.file) ?? {},
       scripts.get(analyzed.file) ?? [],
-      analyzed.compiler ?? compiled.get(analyzed.file) ?? [],
+      analyzed.compiler ?? [],
     );
     cache[analyzed.file] = {
       ...(meta.get(analyzed.file) ?? { hash: "", size: -1, mtime: -1 }),

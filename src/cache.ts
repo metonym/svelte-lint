@@ -28,21 +28,16 @@ export interface Entry {
 const path = (root: string) =>
   join(root, "node_modules/.cache/svelte-lint/results.json");
 
-const svelteVersion = (root: string): string => {
-  const file = join(root, "node_modules/svelte/package.json");
-  return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")).version : "";
-};
-
 const CODE = /\.[jt]s$/;
 
 /**
  * What every cached result depends on besides the component: svelte-lint
- * itself, `bunfig.toml`, Bun, and the project's svelte. Any change empties
+ * itself, with the sveast it bundles, `bunfig.toml` and Bun. Any change empties
  * the cache. svelte-lint's own code counts as well as its version, so a
  * change to it in development counts too.
  */
-export function cacheKey(root: string, bunfig: string): string {
-  const parts = [version, bunfig, Bun.revision, svelteVersion(root)];
+export function cacheKey(bunfig: string): string {
+  const parts = [version, bunfig, Bun.revision];
   for (const file of readdirSync(import.meta.dir).sort()) {
     if (CODE.test(file))
       parts.push(file, readFileSync(join(import.meta.dir, file), "utf8"));

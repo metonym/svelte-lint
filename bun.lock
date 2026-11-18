@@ -12,12 +12,6 @@
         "svelte": "^5.57.3",
         "typescript": "^6.0.3",
       },
-      "peerDependencies": {
-        "svelte": ">=3",
-      },
-      "optionalPeers": [
-        "svelte",
-      ],
     },
   },
   "packages": {

@@ -1,7 +1,6 @@
 import { ParseError } from "sveast";
 import { a11yWarnings } from "sveast/a11y";
 import { compilerWarnings as portedWarnings } from "sveast/warnings";
-import type { compile } from "svelte/compiler";
 import type { Diagnostic } from "./diagnostic.ts";
 import { emit, type Facts, facts, type Segment } from "./emit.ts";
 import { lintTemplate, templateRules } from "./template-rules.ts";
@@ -46,12 +45,6 @@ export interface CompilerWarning {
 const ALL_RULES = Object.fromEntries(
   Object.keys(templateRules).map((name) => [name, "error" as const]),
 );
-
-/** The warning with its message's first line; the second links to the docs. */
-const firstLine = (w: CompilerWarning): CompilerWarning => ({
-  ...w,
-  message: w.message.split("\n")[0],
-});
 
 /**
  * Parses `source` with its CSS and comments when the compiler's warnings
@@ -126,56 +119,5 @@ function ported(
     source,
     filename: file,
     runes: emitted.runes,
-  }).map(firstLine);
-}
-
-type Compile = typeof compile;
-const compilers = new Map<string, Compile>();
-
-/**
- * The project's Svelte compiler's warnings for each component, but its
- * a11y ones, which `analyze` has, by compiling: for Svelte 3 and 4,
- * which warn differently from the Svelte 5 that sveast ports. The
- * compiler loads from `root` on the first call.
- */
-export async function compilerWarnings(
-  root: string,
-  jobs: Job[],
-): Promise<CompilerWarning[][]> {
-  if (jobs.length === 0) return [];
-  let run = compilers.get(root);
-  if (!run) {
-    let path: string;
-    try {
-      path = Bun.resolveSync("svelte/compiler", root);
-    } catch {
-      throw new Error(
-        `"svelte/compiler" is on in [svelte-lint], but svelte isn't installed in ${root}`,
-      );
-    }
-    run = ((await import(path)) as { compile: Compile }).compile;
-    compilers.set(root, run);
-  }
-  const compile = run;
-  return jobs.map(({ file, source }) => {
-    try {
-      return compile(source, {
-        filename: file,
-        generate: false,
-      } as never)
-        .warnings.filter((w) => !w.code.startsWith("a11y"))
-        .map((w) =>
-          firstLine({
-            code: w.code,
-            message: w.message,
-            start: w.start?.character ?? 0,
-            end: w.end?.character ?? w.start?.character ?? 0,
-          }),
-        );
-    } catch {
-      // A compile error the parser didn't catch, such as a bad rune call,
-      // which the compiler reports when the component builds.
-      return [];
-    }
   });
 }

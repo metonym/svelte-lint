@@ -1,6 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { analyze, compilerWarnings, type Job } from "../src/analyze.ts";
+import { compile } from "svelte/compiler";
+import { analyze, type CompilerWarning, type Job } from "../src/analyze.ts";
 import { FIXTURES } from "./shared.ts";
 
 /** Components for the warnings svelte-lint's users meet most, and their edges. */
@@ -17,6 +18,23 @@ const GENERATED: Record<string, string> = {
   "Scss.svelte": `<div class="a"></div>\n\n<style lang="scss">\n  $c: red;\n  .a { .b { color: $c; } }\n</style>\n`,
   "IgnoredScript.svelte": `<script>\n  let { value } = $props();\n  // svelte-ignore state_referenced_locally\n  let count = $state(value);\n  const doubled = count * 2;\n</script>\n\n<p>{doubled}</p>\n`,
 };
+
+/** What Svelte 5's `compile` warns, but the a11y warnings, as sveast gives them. */
+function compiled({ file, source }: Job): CompilerWarning[] {
+  try {
+    return compile(source, { filename: file, generate: false })
+      .warnings.filter((w) => !w.code.startsWith("a11y"))
+      .map((w) => ({
+        code: w.code,
+        message: w.message,
+        start: w.start?.character ?? 0,
+        end: w.end?.character ?? w.start?.character ?? 0,
+      }));
+  } catch {
+    // A component Svelte can't compile, such as one whose CSS is Sass.
+    return [];
+  }
+}
 
 describe("svelte/compiler from sveast", () => {
   it("warns as the project's Svelte 5 compiles, on the fixtures and generated components", async () => {
@@ -35,18 +53,18 @@ describe("svelte/compiler from sveast", () => {
         source,
       })),
     ];
-    const compiled = await compilerWarnings(FIXTURES, jobs);
+    const expected = jobs.map(compiled);
     const ported = jobs.map(
       (job) => analyze({ ...job, compiler: true }).compiler ?? [],
     );
     for (const [n, job] of jobs.entries()) {
       expect({ file: job.file, warnings: ported[n] }).toEqual({
         file: job.file,
-        warnings: compiled[n],
+        warnings: expected[n],
       });
     }
     // The set reaches the codes it's for.
-    const codes = new Set(compiled.flat().map((w) => w.code));
+    const codes = new Set(expected.flat().map((w) => w.code));
     for (const code of [
       "css_unused_selector",
       "block_empty",

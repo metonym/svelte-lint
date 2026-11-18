@@ -2,14 +2,26 @@
 
 ## Unreleased
 
+**Breaking**
+
+- `svelte/compiler` is on, as `warn`, so a project gets the compiler's
+  warnings, such as `css_unused_selector` and
+  `state_referenced_locally`, without configuring it. Set it to `off`
+  to go back.
+- The compiler's warnings are Svelte 5's, from sveast 0.11.1's port,
+  whichever Svelte the project has: svelte-lint no longer compiles, or
+  loads the project's `svelte` at all, and no longer has a peer
+  dependency on it. A Svelte 3 or 4 component gets the warnings Svelte
+  5 gives it in legacy mode.
+
 **Performance**
 
-- `svelte/compiler` no longer compiles a Svelte 5 project's components:
-  its warnings come from sveast 0.11.1's port of the compiler's, with the
-  same codes, messages and positions, on the same parse as the other
-  rules. On carbon-components-svelte's 2,207 components, a cold run with
-  it on takes 0.70s, from 1.76s. Svelte 3 and 4 still compile, since
-  they warn differently, and so would a Svelte 6 (#16, #10).
+- With no compile, `svelte/compiler` costs about 70 ms of a 0.7s cold
+  run on carbon-components-svelte's 2,207 components, where it took
+  about 1s of 1.76s (#16, #10).
+
+**Fixes**
+
 - sveast 0.11.1 parses a snippet type parameter with an arrow function
   type, and an optional property in a template type annotation, which
   were syntax errors.

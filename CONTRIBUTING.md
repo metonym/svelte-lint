@@ -27,8 +27,8 @@ bun run build         # dist/: the bundle, index.d.ts and a slimmed package.json
 
 - **The script rules are the project's `[lint]`.** svelte-lint doesn't add or change script rules; it makes the module's code mean what the component means, and drops only the reports `isSvelteIdiom` lists.
 - **A problem points at the component.** Lines, columns and fixes map back to the `.svelte` file; a problem in the generated part is dropped, never reported.
-- **No runtime dependencies.** sveast is bundled; Svelte, for `svelte/compiler`, is loaded from the project.
-- **Load only what a run needs.** The parser and the compiler load only when a component changed, and git starts before the rest loads.
+- **No runtime dependencies.** sveast is bundled, and the project's Svelte is never loaded: the compiler's warnings come from sveast's port.
+- **Load only what a run needs.** The parser loads only when a component changed, and git starts before the rest loads.
 
 ## Tests
 
@@ -38,6 +38,7 @@ bun run build         # dist/: the bundle, index.d.ts and a slimmed package.json
 | `tests/lint.test.ts`      | `lint` on `tests/fixtures`: each rule, Svelte's idioms, ignored components, positions, the root from a subfolder, paths, `fix`, the cache, `staged` and `changed` |
 | `tests/watch.test.ts`     | `watch`: a new component's template problems first, then `bun lint`'s, and a removed one                                                                          |
 | `tests/cli.test.ts`       | The CLI's formats and exit codes                                                                                                                                  |
+| `tests/compiler.test.ts`  | `svelte/compiler`: sveast's warnings against Svelte 5's `compile`, on the fixtures and generated components                                                       |
 | `tests/api.test.ts`       | The exports against `src/types.ts`, the package's `index.d.ts`                                                                                                    |
 | `scripts/test-package.ts` | The packed package's imports, and its bin and API on a project                                                                                                    |
 

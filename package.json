@@ -21,14 +21,6 @@
   "engines": {
     "bun": ">=1.4.4"
   },
-  "peerDependencies": {
-    "svelte": ">=3"
-  },
-  "peerDependenciesMeta": {
-    "svelte": {
-      "optional": true
-    }
-  },
   "scripts": {
     "build": "bun scripts/build.ts",
     "test": "bun test ./tests",
