@@ -16,6 +16,33 @@
   run, so the problem goes away once another file fixes it. Before,
   the cache kept it until the component changed.
 
+## 0.1.3 — 2026-11-18
+
+**Fixes**
+
+- `--max-warnings` takes a whole number of 0 or more and exits 2 on
+  anything else. `abc` was read as no limit.
+- `--staged` with `--changed` exits 2. `--staged` won without a word.
+- `--watch` skips a new component git ignores, such as one a build
+  writes to `dist/`, as the first run does.
+- `[lint]`'s `ignorePatterns` skip components too, matched as `bun lint`
+  matches them. Only `[svelte-lint]`'s did, so a folder `bun lint`
+  skipped still had its components linted.
+- A path named on the command line is no longer skipped without a
+  word (#2). As in `bun lint`, a named path that git ignores, or in a
+  dot folder, is linted; a named file that `ignorePatterns` skip, or
+  that isn't a `.svelte` file, is skipped with a warning; and a path
+  that doesn't exist, or a folder with no component to lint, exits 2.
+  The API's `lint` throws for those, and its result lists the skipped
+  files in `skipped`.
+
+**Docs**
+
+- `docs/biome.md` maps a `biome.json` to `bunfig.toml`, rule by rule.
+- The README says that svelte-check and svelte-typecheck report the
+  compiler's warnings too, so `svelte/compiler` can stay off when CI
+  runs either.
+
 ## 0.1.2 — 2026-11-12
 
 **Fixes**

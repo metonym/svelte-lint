@@ -57,11 +57,21 @@ export interface LintOptions {
   cache?: boolean;
 }
 
+/** A file named in `paths` that isn't linted. */
+export interface Skipped {
+  /** As named in `paths`. */
+  path: string;
+  /** `ignored`: `ignorePatterns` in `bunfig.toml` skip it. `not a component`: it isn't a `.svelte` file. */
+  reason: "ignored" | "not a component";
+}
+
 export interface LintResult {
   /** The project root, which `file` paths are relative to. */
   root: string;
   /** The components linted. */
   files: string[];
+  /** The files named in `paths` that aren't linted, and why. */
+  skipped: Skipped[];
   diagnostics: Diagnostic[];
   errors: number;
   warnings: number;
