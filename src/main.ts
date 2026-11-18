@@ -134,7 +134,14 @@ export async function main(argv: string[]): Promise<0 | 1 | 2> {
     console.error((error as Error).message);
     return 2;
   }
-  const { root, files, paths } = selected;
+  const { root, files, paths, skipped } = selected;
+  for (const { path, reason } of skipped) {
+    console.error(
+      reason === "ignored"
+        ? `warning: ${path} isn't linted: ignorePatterns in bunfig.toml skip it.`
+        : `warning: ${path} isn't linted: it isn't a .svelte file.`,
+    );
+  }
 
   if (values.watch) {
     await watchComponents({

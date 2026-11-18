@@ -77,6 +77,8 @@ svelte-lint --watch              # again on each save
 
 It exits 1 on an error, or on more warnings than `--max-warnings`, and 2 on a bad option. The project is the nearest folder with a `bunfig.toml`, from the current one up, as `bun lint` finds its config. Its components are the `.svelte` files git tracks or would add, or outside a repository, every one but those in `node_modules` and dot folders.
 
+A path you name is linted even if git ignores it or it's in a dot folder, as in `bun lint`. A named file that `ignorePatterns` skip, or that isn't a `.svelte` file, is skipped with a warning. A path that doesn't exist, or a folder with no component to lint, exits 2.
+
 ## Configuration
 
 Everything lives in `bunfig.toml`. `[lint]` is `bun lint`'s, and lints the components' scripts and markup expressions as it lints your `.ts` files: the same rules, overrides and `// eslint-disable` comments. An override for `src/**/*.svelte` applies to components; `src/**` applies to them and to the `.ts` files. Its `ignorePatterns` skip components too, read as `bun lint` reads them.

@@ -12,6 +12,13 @@
 - `[lint]`'s `ignorePatterns` skip components too, matched as `bun lint`
   matches them. Only `[svelte-lint]`'s did, so a folder `bun lint`
   skipped still had its components linted.
+- A path named on the command line is no longer skipped without a
+  word (#2). As in `bun lint`, a named path that git ignores, or in a
+  dot folder, is linted; a named file that `ignorePatterns` skip, or
+  that isn't a `.svelte` file, is skipped with a warning; and a path
+  that doesn't exist, or a folder with no component to lint, exits 2.
+  The API's `lint` throws for those, and its result lists the skipped
+  files in `skipped`.
 
 **Docs**
 

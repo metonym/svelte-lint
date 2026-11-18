@@ -209,6 +209,73 @@ describe("lint", () => {
       "src/New.svelte:1 svelte/a11y_missing_attribute",
     ]);
   });
+
+  it("lints a named path git ignores, as bun lint does", async () => {
+    const dir = await workspace("named-ignored");
+    await writeFile(join(dir, ".gitignore"), "scratch/\n");
+    await mkdir(join(dir, "scratch/deep"), { recursive: true });
+    await mkdir(join(dir, ".context"));
+    const button = "<button>x</button>\n";
+    await writeFile(join(dir, "scratch/A.svelte"), button);
+    await writeFile(join(dir, "scratch/deep/B.svelte"), button);
+    await writeFile(join(dir, ".context/C.svelte"), button);
+    // Not unless named.
+    expect((await lint({ cwd: dir, cache: false })).files).not.toContain(
+      "scratch/A.svelte",
+    );
+    for (const [paths, files] of [
+      [["scratch/A.svelte"], ["scratch/A.svelte"]],
+      [["scratch"], ["scratch/A.svelte", "scratch/deep/B.svelte"]],
+      [["scratch/deep"], ["scratch/deep/B.svelte"]],
+      [[".context"], [".context/C.svelte"]],
+    ]) {
+      // One at a time: runs in one process share the folder of modules.
+      // eslint-disable-next-line no-await-in-loop
+      const result = await lint({ cwd: dir, paths, cache: false });
+      expect(result.files.toSorted()).toEqual(files);
+      expect(result.errors).toBe(files.length);
+    }
+  });
+
+  it("says which named files it skips, and throws for a path with nothing to lint", async () => {
+    const result = await lint({
+      cwd: FIXTURES,
+      paths: ["src/Ignored.svelte", "bunfig.toml", "src/Clean.svelte"],
+      cache: false,
+    });
+    expect(result.files).toEqual(["src/Clean.svelte"]);
+    expect(result.skipped).toEqual([
+      { path: "src/Ignored.svelte", reason: "ignored" },
+      { path: "bunfig.toml", reason: "not a component" },
+    ]);
+    const dir = await workspace("named-nothing");
+    await mkdir(join(dir, "empty"));
+    await mkdir(join(dir, "skipped"));
+    await writeFile(join(dir, "skipped/S.svelte"), "<p>s</p>\n");
+    await writeFile(
+      join(dir, "bunfig.toml"),
+      `${await readFile(join(dir, "bunfig.toml"), "utf8")}`.replace(
+        `ignorePatterns = ["src/Ignored.svelte"]`,
+        `ignorePatterns = ["src/Ignored.svelte", "skipped/**"]`,
+      ),
+    );
+    await Promise.all(
+      [
+        ["does/not/exist.svelte", "no such file or folder"],
+        ["empty", "has no components"],
+        ["skipped", "skip every component"],
+        ["..", "outside the project"],
+      ].map(([path, message]) =>
+        expect(lint({ cwd: dir, paths: [path], cache: false })).rejects.toThrow(
+          message,
+        ),
+      ),
+    );
+    // --staged and --changed may pick nothing under a path.
+    expect(
+      (await lint({ cwd: dir, paths: ["empty"], staged: true })).files,
+    ).toEqual([]);
+  });
 });
 
 describe("compiler warnings", () => {

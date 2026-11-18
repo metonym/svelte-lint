@@ -4,6 +4,7 @@ export type {
   Fix,
   LintOptions,
   LintResult,
+  Skipped,
   WatchOptions,
   WatchUpdate,
   Watcher,
