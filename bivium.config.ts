@@ -37,6 +37,7 @@ export default defineConfig({
   reads: {
     "tests/shared.ts": fixtures,
     "tests/cli.test.ts": fixtures,
+    "tests/compiler.test.ts": fixtures,
     "tests/lint.test.ts": fixtures,
     "tests/watch.test.ts": fixtures,
     "scripts/test-package.ts": fixtures,

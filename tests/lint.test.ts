@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { readFile, utimes, writeFile } from "node:fs/promises";
+import { mkdir, readFile, utimes, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { lint } from "../src/api.ts";
 import { brief, FIXTURES, workspace } from "./shared.ts";
@@ -146,6 +146,42 @@ rules = { "svelte/compiler" = "error" }
     );
     expect(unused?.help).toBe(
       "If the script sets the class or attribute, wrap that part in `:global(...)`, as in `.item:global([data-open])`. Otherwise fix it, or add <!-- svelte-ignore css_unused_selector --> above the `<style>` tag.",
+    );
+  });
+
+  it("compiles with the project's Svelte 3 or 4, whose warnings sveast doesn't port", async () => {
+    const dir = await workspace("compiler-svelte4");
+    // A Svelte 4 whose compiler gives one warning of its own.
+    const svelte = join(dir, "node_modules/svelte");
+    await mkdir(svelte, { recursive: true });
+    await writeFile(
+      join(svelte, "package.json"),
+      JSON.stringify({
+        name: "svelte",
+        version: "4.2.19",
+        type: "module",
+        exports: { "./compiler": "./compiler.js" },
+      }),
+    );
+    await writeFile(
+      join(svelte, "compiler.js"),
+      `export const compile = () => ({ warnings: [{ code: "from_svelte_4", message: "Compiled\\nhttps://svelte.dev", start: { character: 0 }, end: { character: 1 } }] });\n`,
+    );
+    await writeFile(
+      join(dir, "bunfig.toml"),
+      `${await readFile(join(dir, "bunfig.toml"), "utf8")}
+[[svelte-lint.overrides]]
+files = ["src/Clean.svelte"]
+rules = { "svelte/compiler" = "error" }
+`,
+    );
+    const { diagnostics } = await lint({
+      cwd: dir,
+      paths: ["src/Clean.svelte"],
+      cache: false,
+    });
+    expect(diagnostics.map((d) => [d.rule, d.message, d.start, d.end])).toEqual(
+      [["svelte/from_svelte_4", "Compiled", 0, 1]],
     );
   });
 });

@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type { Analysis, CompilerWarning, Job } from "./analyze.ts";
 import { cacheKey, type Entry, hash, loadCache, saveCache } from "./cache.ts";
 import { rulesFor, type Severity, templateConfig } from "./config.ts";
@@ -38,6 +38,35 @@ export interface Session {
   config: ReturnType<typeof templateConfig>;
   key: string;
   cache: Record<string, Entry>;
+  /**
+   * Whether `svelte/compiler`'s warnings come from sveast's port of
+   * Svelte 5's, rather than from compiling with the project's Svelte.
+   */
+  ported: boolean;
+}
+
+/**
+ * The major version of the Svelte `root` resolves, or `undefined` when
+ * it has none: from its `package.json`, found up from the compiler,
+ * since Svelte 3 doesn't export it.
+ */
+function svelteMajor(root: string): number | undefined {
+  let path: string;
+  try {
+    path = Bun.resolveSync("svelte/compiler", root);
+  } catch {
+    return undefined;
+  }
+  for (let dir = dirname(path); dir !== dirname(dir); dir = dirname(dir)) {
+    const file = join(dir, "package.json");
+    if (!existsSync(file)) continue;
+    const pkg = JSON.parse(readFileSync(file, "utf8")) as {
+      name?: string;
+      version?: string;
+    };
+    if (pkg.name === "svelte") return Number.parseInt(pkg.version ?? "", 10);
+  }
+  return undefined;
 }
 
 export function openSession(
@@ -55,6 +84,9 @@ export function openSession(
     config: templateConfig(bunfig, DEFAULT_RULES),
     key,
     cache: options.cache ? loadCache(root, key) : {},
+    // Svelte 3 and 4 warn differently, so they compile. Without Svelte,
+    // there's no compiler to ask, and the port needs none.
+    ported: (svelteMajor(root) ?? 5) >= 5,
   };
 }
 
@@ -89,7 +121,7 @@ export async function lint(
   options: LintOptions = { cache: true },
 ): Promise<LintResult> {
   const session = options.session ?? openSession(root, options);
-  const { bunfig, config, key, cache } = session;
+  const { bunfig, config, key, cache, ported } = session;
 
   const sources = new Map<string, string>();
   const meta = new Map<string, { hash: string; size: number; mtime: number }>();
@@ -138,9 +170,9 @@ export async function lint(
     }
     const rules = rulesFor(config, file);
     severities.set(file, rules);
-    jobs.push({ file, source: source ?? "" });
-    if (rules["svelte/compiler"] !== "off")
-      compileJobs.push({ file, source: source ?? "" });
+    const compiler = rules["svelte/compiler"] !== "off";
+    jobs.push({ file, source: source ?? "", compiler: compiler && ported });
+    if (compiler && !ported) compileJobs.push({ file, source: source ?? "" });
   }
 
   // The parser and bun lint's runner load only when something changed.
@@ -149,7 +181,8 @@ export async function lint(
       ? await Promise.all([import("./analyze.ts"), import("./script-rules.ts")])
       : [null, null];
   // bun lint runs in its own process, so it lints each batch while the
-  // next one is analyzed here, and the compiler runs after.
+  // next one is analyzed here, and the compiler, for Svelte 3 and 4,
+  // runs after.
   const analyses: Analysis[] = [];
   const started: { done: Promise<Map<string, Diagnostic[]>> }[] = [];
   const batches = Math.min(BATCHES, Math.ceil(jobs.length / PER_BATCH));
@@ -183,7 +216,9 @@ export async function lint(
     started.push(lintStarted);
   }
   options.onTemplate?.(
-    analyses.flatMap((a) => collect(a, severities.get(a.file) ?? {}, [], [])),
+    analyses.flatMap((a) =>
+      collect(a, severities.get(a.file) ?? {}, [], a.compiler ?? []),
+    ),
     analyses.map((a) => a.file),
     sources,
   );
@@ -202,7 +237,7 @@ export async function lint(
       analyzed,
       severities.get(analyzed.file) ?? {},
       scripts.get(analyzed.file) ?? [],
-      compiled.get(analyzed.file) ?? [],
+      analyzed.compiler ?? compiled.get(analyzed.file) ?? [],
     );
     cache[analyzed.file] = {
       ...(meta.get(analyzed.file) ?? { hash: "", size: -1, mtime: -1 }),

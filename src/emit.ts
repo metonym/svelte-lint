@@ -248,10 +248,13 @@ function hasAwait(node: Node): boolean {
   return found;
 }
 
-/** Turns `source`, a component, into a module for `bun lint`. */
-export function emit(source: string): Emitted {
-  // The scripts are copied as text, so the AST needs no comments.
-  const ast = parse(source, { css: false, comments: false });
+/**
+ * Turns `source`, a component, into a module for `bun lint`. The module
+ * copies the scripts as text, so the AST needs neither the CSS nor the
+ * comments, unless `full`: the compiler's warnings read both.
+ */
+export function emit(source: string, full = false): Emitted {
+  const ast = parse(source, { css: full, comments: full });
   const scopes = analyzeScopes(ast);
   const runes = isRunesMode(source);
   const scriptNodes = [ast.module, ast.instance].filter((s) => s != null);

@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+**Performance**
+
+- `svelte/compiler` no longer compiles a Svelte 5 project's components:
+  its warnings come from sveast 0.11's port of the compiler's, with the
+  same codes, messages and positions, on the same parse as the other
+  rules. On carbon-components-svelte's 2,207 components, a cold run with
+  it on takes 0.70s, from 1.76s. Svelte 3 and 4 still compile, since
+  they warn differently (#16, #10).
+
 ## 0.1.2 — 2026-11-12
 
 **Fixes**
