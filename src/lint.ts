@@ -2,7 +2,12 @@ import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Analysis, CompilerWarning, Job } from "./analyze.ts";
 import { cacheKey, type Entry, hash, loadCache, saveCache } from "./cache.ts";
-import { rulesFor, type Severity, templateConfig } from "./config.ts";
+import {
+  lintIgnores,
+  rulesFor,
+  type Severity,
+  templateConfig,
+} from "./config.ts";
 import type { Diagnostic } from "./diagnostic.ts";
 import type { Component } from "./script-rules.ts";
 import { templateRules } from "./template-rules.ts";
@@ -325,7 +330,10 @@ export async function lintAndFix(
   return result;
 }
 
-/** `files` that exist and that `[svelte-lint]`'s `ignorePatterns` don't skip. */
+/**
+ * `files` that exist and that neither `[svelte-lint]`'s `ignorePatterns`
+ * nor `[lint]`'s skip.
+ */
 export function filterComponents(root: string, files: string[]): string[] {
   const bunfigPath = join(root, "bunfig.toml");
   const bunfig = existsSync(bunfigPath)
@@ -336,8 +344,11 @@ export function filterComponents(root: string, files: string[]): string[] {
     DEFAULT_RULES,
   );
   const ignore = config.ignorePatterns.map((p) => new Bun.Glob(p));
+  const lintIgnored = lintIgnores(bunfig as Record<string, unknown>);
   return [...new Set(files)].filter(
     (file) =>
-      existsSync(join(root, file)) && !ignore.some((glob) => glob.match(file)),
+      existsSync(join(root, file)) &&
+      !ignore.some((glob) => glob.match(file)) &&
+      !lintIgnored(file),
   );
 }

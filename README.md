@@ -51,6 +51,8 @@ On carbon-components-svelte's 2,207 components, on an M-series Mac at load avera
 
 ESLint with eslint-plugin-svelte took about 21s for the same components, cold.
 
+Moving from Biome? [docs/biome.md](https://github.com/metonym/svelte-lint/blob/master/docs/biome.md) maps its config and rules to `bunfig.toml`.
+
 ## Usage
 
 ```sh
@@ -77,7 +79,7 @@ It exits 1 on an error, or on more warnings than `--max-warnings`, and 2 on a ba
 
 ## Configuration
 
-Everything lives in `bunfig.toml`. `[lint]` is `bun lint`'s, and lints the components' scripts and markup expressions as it lints your `.ts` files: the same rules, overrides and `// eslint-disable` comments. An override for `src/**/*.svelte` applies to components; `src/**` applies to them and to the `.ts` files.
+Everything lives in `bunfig.toml`. `[lint]` is `bun lint`'s, and lints the components' scripts and markup expressions as it lints your `.ts` files: the same rules, overrides and `// eslint-disable` comments. An override for `src/**/*.svelte` applies to components; `src/**` applies to them and to the `.ts` files. Its `ignorePatterns` skip components too, read as `bun lint` reads them.
 
 `[svelte-lint]` has the rules for the markup, which `bun lint` doesn't know:
 
@@ -99,6 +101,8 @@ rules = { "svelte/require-each-key" = "error" }
 | `svelte/no-aria-hidden-on-focusable`       | error   | `aria-hidden="true"` on an element the keyboard can still reach                                            |
 | `svelte/a11y`                              | error   | The Svelte compiler's a11y warnings, from [sveast](https://github.com/metonym/sveast)'s port of its checks |
 | `svelte/compiler`                          | off     | The compiler's other warnings, from the project's own `svelte`, by compiling                               |
+
+svelte-check and svelte-typecheck report the compiler's warnings too, so if CI runs either one, leave `svelte/compiler` off and pass it `--fail-on-warnings` instead. Compiling is most of what a cold run costs: on svelte-time's 97 components, turning `svelte/compiler` on takes a run without the cache from 99ms to about 255ms.
 
 A severity is `"error"`, `"warn"` or `"off"`. `<!-- svelte-ignore code -->` silences a compiler warning as it does in Svelte: in legacy mode, Svelte 4's `a11y-…` codes count too. A syntax error is always reported.
 

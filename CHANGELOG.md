@@ -9,6 +9,16 @@
 - `--staged` with `--changed` exits 2. `--staged` won without a word.
 - `--watch` skips a new component git ignores, such as one a build
   writes to `dist/`, as the first run does.
+- `[lint]`'s `ignorePatterns` skip components too, matched as `bun lint`
+  matches them. Only `[svelte-lint]`'s did, so a folder `bun lint`
+  skipped still had its components linted.
+
+**Docs**
+
+- `docs/biome.md` maps a `biome.json` to `bunfig.toml`, rule by rule.
+- The README says that svelte-check and svelte-typecheck report the
+  compiler's warnings too, so `svelte/compiler` can stay off when CI
+  runs either.
 
 ## 0.1.2 — 2026-11-12
 

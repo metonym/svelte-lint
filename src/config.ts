@@ -98,6 +98,49 @@ function matches(patterns: string[], file: string): boolean {
   });
 }
 
+interface IgnorePattern {
+  glob: InstanceType<typeof Bun.Glob>;
+  negated: boolean;
+  dirOnly: boolean;
+  anchored: boolean;
+}
+
+/**
+ * A test for the paths `[lint]`'s `ignorePatterns` skip, read as `bun lint`
+ * reads them, like a `.gitignore`: a pattern without a slash matches a
+ * file or folder name at any depth, one with a slash matches from the
+ * root, a trailing slash matches folders only, a later `!pattern` keeps
+ * what an earlier one skipped, and nothing in a skipped folder is kept.
+ */
+export function lintIgnores(bunfig: Toml): (file: string) => boolean {
+  const patterns = asArray(((bunfig.lint ?? {}) as Toml).ignorePatterns);
+  const parsed: IgnorePattern[] = patterns.map((raw) => {
+    let pattern = raw;
+    const negated = pattern.startsWith("!");
+    if (negated) pattern = pattern.slice(1);
+    const dirOnly = pattern.endsWith("/");
+    if (dirOnly) pattern = pattern.slice(0, -1);
+    const anchored = pattern.includes("/");
+    if (pattern.startsWith("/")) pattern = pattern.slice(1);
+    return { glob: new Bun.Glob(pattern), negated, dirOnly, anchored };
+  });
+  if (parsed.length === 0) return () => false;
+  const skips = (path: string, isDir: boolean) => {
+    const name = path.slice(path.lastIndexOf("/") + 1);
+    // The last pattern that matches decides.
+    const last = parsed.findLast(
+      (p) => (isDir || !p.dirOnly) && p.glob.match(p.anchored ? path : name),
+    );
+    return last !== undefined && !last.negated;
+  };
+  return (file) => {
+    for (let i = file.indexOf("/"); i !== -1; i = file.indexOf("/", i + 1)) {
+      if (skips(file.slice(0, i), true)) return true;
+    }
+    return skips(file, false);
+  };
+}
+
 /**
  * Patterns that name `.svelte` files, for the modules that stand in for
  * them: `src/**\/*.svelte` also matches `src/A.svelte.js` and
