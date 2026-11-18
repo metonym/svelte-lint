@@ -5,11 +5,14 @@
 **Performance**
 
 - `svelte/compiler` no longer compiles a Svelte 5 project's components:
-  its warnings come from sveast 0.11's port of the compiler's, with the
+  its warnings come from sveast 0.11.1's port of the compiler's, with the
   same codes, messages and positions, on the same parse as the other
   rules. On carbon-components-svelte's 2,207 components, a cold run with
   it on takes 0.70s, from 1.76s. Svelte 3 and 4 still compile, since
-  they warn differently (#16, #10).
+  they warn differently, and so would a Svelte 6 (#16, #10).
+- sveast 0.11.1 parses a snippet type parameter with an arrow function
+  type, and an optional property in a template type annotation, which
+  were syntax errors.
 
 ## 0.1.2 — 2026-11-12
 

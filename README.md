@@ -91,14 +91,14 @@ files = ["src/**/*.svelte"]
 rules = { "svelte/require-each-key" = "error" }
 ```
 
-| Rule                                       | Default | Reports                                                                                                                                              |
-| :----------------------------------------- | :------ | :--------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `svelte/require-each-key`                  | error   | An `{#each}` with an item and no key                                                                                                                 |
-| `svelte/no-bind-value-on-checkable-inputs` | error   | `bind:value` on a checkbox or a radio; fixes a checkbox's to `bind:checked`                                                                          |
-| `svelte/button-has-type`                   | error   | A `<button>` without a `type`, which submits a form it's in                                                                                          |
-| `svelte/no-aria-hidden-on-focusable`       | error   | `aria-hidden="true"` on an element the keyboard can still reach                                                                                      |
-| `svelte/a11y`                              | error   | The Svelte compiler's a11y warnings, from [sveast](https://github.com/metonym/sveast)'s port of its checks                                           |
-| `svelte/compiler`                          | off     | The compiler's other warnings: for Svelte 5, from sveast's port, without compiling; for Svelte 3 and 4, by compiling with the project's own `svelte` |
+| Rule                                       | Default | Reports                                                                                                                                                 |
+| :----------------------------------------- | :------ | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `svelte/require-each-key`                  | error   | An `{#each}` with an item and no key                                                                                                                    |
+| `svelte/no-bind-value-on-checkable-inputs` | error   | `bind:value` on a checkbox or a radio; fixes a checkbox's to `bind:checked`                                                                             |
+| `svelte/button-has-type`                   | error   | A `<button>` without a `type`, which submits a form it's in                                                                                             |
+| `svelte/no-aria-hidden-on-focusable`       | error   | `aria-hidden="true"` on an element the keyboard can still reach                                                                                         |
+| `svelte/a11y`                              | error   | The Svelte compiler's a11y warnings, from [sveast](https://github.com/metonym/sveast)'s port of its checks                                              |
+| `svelte/compiler`                          | off     | The compiler's other warnings: for Svelte 5, from sveast's port, without compiling; for Svelte 3, 4 and 6, by compiling with the project's own `svelte` |
 
 A severity is `"error"`, `"warn"` or `"off"`. `<!-- svelte-ignore code -->` silences a compiler warning as it does in Svelte: in legacy mode, Svelte 4's `a11y-…` codes count too. A syntax error is always reported.
 
@@ -134,7 +134,7 @@ watcher.close();
 
 ## How it works
 
-Each component becomes a module at the same offsets: its `<script>`s as they are, the markup blanked to spaces with its line breaks kept, and the markup's expressions after them. A part `bun lint` doesn't lint, in `eslint-disable` comments, says what the markup and Svelte do to the scripts' names: which ones the markup reads and writes, that a parent writes the props, that `$count` reads `count`, and the names Svelte declares. `bun lint` lints the modules in a temporary folder with your `[lint]`, and each problem and fix maps back to the component. The template rules and a11y checks run on the same parse, by [sveast](https://github.com/metonym/sveast), which is bundled, so the package has no dependencies. So do `svelte/compiler`'s warnings in a Svelte 5 project, from sveast's port of the compiler's, which gives the same codes, messages and positions as `compile` in a fraction of the time; that parse keeps the `<style>` and the scripts' comments, which they read. A Svelte 3 or 4 project, whose compiler warns differently, compiles each component instead.
+Each component becomes a module at the same offsets: its `<script>`s as they are, the markup blanked to spaces with its line breaks kept, and the markup's expressions after them. A part `bun lint` doesn't lint, in `eslint-disable` comments, says what the markup and Svelte do to the scripts' names: which ones the markup reads and writes, that a parent writes the props, that `$count` reads `count`, and the names Svelte declares. `bun lint` lints the modules in a temporary folder with your `[lint]`, and each problem and fix maps back to the component. The template rules and a11y checks run on the same parse, by [sveast](https://github.com/metonym/sveast), which is bundled, so the package has no dependencies. So do `svelte/compiler`'s warnings in a Svelte 5 project, from sveast's port of the compiler's, which gives the same codes, messages and positions as `compile` in a fraction of the time; that parse keeps the `<style>` and the scripts' comments, which they read. A Svelte 3 or 4 project, whose compiler warns differently, compiles each component instead, as would a Svelte 6 one.
 
 A component whose size and modification time haven't changed since the last run isn't read; one whose content hasn't changed isn't parsed or linted. Results are kept in `node_modules/.cache/svelte-lint`, keyed by svelte-lint's version, `bunfig.toml`, Bun and the project's Svelte. In CI, restore that folder between runs.
 

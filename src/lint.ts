@@ -84,9 +84,10 @@ export function openSession(
     config: templateConfig(bunfig, DEFAULT_RULES),
     key,
     cache: options.cache ? loadCache(root, key) : {},
-    // Svelte 3 and 4 warn differently, so they compile. Without Svelte,
-    // there's no compiler to ask, and the port needs none.
-    ported: (svelteMajor(root) ?? 5) >= 5,
+    // sveast ports Svelte 5's warnings. Svelte 3 and 4 warn differently,
+    // and a later major may, so they compile. Without Svelte, there's no
+    // compiler to ask, and the port needs none.
+    ported: (svelteMajor(root) ?? 5) === 5,
   };
 }
 
