@@ -1,6 +1,6 @@
 {
   "name": "svelte-lint",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "license": "MIT",
   "description": "The Svelte linter for bun lint: your [lint] rules inside components, plus template rules and the compiler's warnings, a11y included, without compiling. Zero dependencies, cached, with a watch mode.",
   "author": "Eric Liu (https://github.com/metonym)",
