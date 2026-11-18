@@ -107,7 +107,7 @@ rules = { "svelte/require-each-key" = "error" }
 
 A severity is `"error"`, `"warn"` or `"off"`. `<!-- svelte-ignore code -->` silences a compiler warning as it does in Svelte: in legacy mode, Svelte 4's `a11y-…` codes count too. A syntax error is always reported.
 
-The compiler's warnings are Svelte 5's, whichever Svelte the project has: a Svelte 3 or 4 component gets the ones Svelte 5 gives it in legacy mode. svelte-lint never loads the project's `svelte`. With a type checker, such as svelte-typecheck or `tsc`, it covers what svelte-check reports; if CI runs svelte-check too, turn `svelte/compiler` off in one of them, or each warning is reported twice.
+The compiler's warnings are Svelte 5's, whichever Svelte the project has: a Svelte 3 or 4 component gets the ones Svelte 5 gives it in legacy mode. svelte-lint never loads the project's `svelte`. With a type checker, it covers what svelte-check reports. Run svelte-typecheck or svelte-check with `--diagnostic-sources js`, so it checks types only: it doesn't compile, which is faster, and doesn't report each warning a second time.
 
 ### Svelte's idioms
 
@@ -150,6 +150,7 @@ A component whose size and modification time haven't changed since the last run 
 - A component that parses but fails the compiler's analysis, such as one with an invalid attribute name, isn't reported. Your build reports it.
 - Each run, and each change in `--watch`, starts a `bun lint` process, which is most of the time a small change takes.
 - `svelte/a11y` follows Svelte 5's checks, whichever Svelte the project has.
+- Only components are linted for the compiler's warnings, not Svelte modules (`.svelte.js`, `.svelte.ts`). svelte-typecheck and svelte-check report those with their `svelte` diagnostic source.
 
 ## Contributing
 
