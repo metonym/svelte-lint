@@ -1,6 +1,7 @@
 import { existsSync, watch as watchFiles } from "node:fs";
 import { join } from "node:path";
 import type { Diagnostic } from "./diagnostic.ts";
+import { gitIgnored } from "./files.ts";
 import {
   filterComponents,
   isScriptProblem,
@@ -138,7 +139,14 @@ export async function watchComponents(
         sources.delete(file);
         delete session.cache[file];
       }
-      const present = filterComponents(root, changed);
+      // The first run's list leaves out what git ignores, so a new
+      // component, such as one a build writes, has to as well.
+      const found = filterComponents(root, changed);
+      const ignored = await gitIgnored(
+        root,
+        found.filter((file) => !files.has(file)),
+      );
+      const present = found.filter((file) => !ignored.has(file));
       for (const file of present) files.add(file);
       if (present.length > 0) await run(present, "change");
       else if (gone.length > 0)

@@ -32,6 +32,7 @@ the template rules and a11y checks [svelte-lint] turns on.
 Exits 1 on an error, or on more warnings than --max-warnings.`;
 
 const FORMATS: readonly Format[] = ["pretty", "agent", "json", "github"];
+const WHOLE_NUMBER = /^\d+$/;
 
 function parse(argv: string[]) {
   return parseArgs({
@@ -104,6 +105,17 @@ export async function main(argv: string[]): Promise<0 | 1 | 2> {
     );
     return 2;
   }
+  if (values.staged && values.changed != null) {
+    console.error("--staged and --changed each pick the components: use one.");
+    return 2;
+  }
+  const maxWarnings = values["max-warnings"];
+  if (maxWarnings != null && !WHOLE_NUMBER.test(maxWarnings)) {
+    console.error(
+      `--max-warnings takes a whole number of 0 or more, not ${maxWarnings}`,
+    );
+    return 2;
+  }
   const color =
     values.color ??
     (!values["no-color"] &&
@@ -169,10 +181,10 @@ export async function main(argv: string[]): Promise<0 | 1 | 2> {
   );
   if (output) console.log(output);
 
-  const { maxWarnings } = (readBunfig(root).lint ?? {}) as {
+  const lintConfig = (readBunfig(root).lint ?? {}) as {
     maxWarnings?: number;
   };
-  const limit = Number(values["max-warnings"] ?? maxWarnings ?? -1);
+  const limit = Number(maxWarnings ?? lintConfig.maxWarnings ?? -1);
   const { errors, warnings } = count(result.diagnostics);
   return errors > 0 || (limit >= 0 && warnings > limit) ? 1 : 0;
 }

@@ -1,4 +1,4 @@
-import { rm, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { watch } from "../src/api.ts";
 import type { WatchUpdate } from "../src/types.ts";
@@ -52,6 +52,30 @@ describe("watch", () => {
       expect(update.changed).toEqual(["src/Added.svelte"]);
       expect(
         update.diagnostics.some((d) => d.file === "src/Added.svelte"),
+      ).toBe(false);
+    } finally {
+      watcher.close();
+    }
+  });
+
+  it("skips a new component git ignores, as the first run does", async () => {
+    const dir = await workspace("watch-ignored");
+    await writeFile(join(dir, ".gitignore"), "dist/\n");
+    const { updates, onUpdate, next } = recorder();
+    const watcher = await watch({ cwd: dir, cache: false, onUpdate });
+    try {
+      await mkdir(join(dir, "dist"));
+      await writeFile(join(dir, "dist/Built.svelte"), "<button>x</button>\n");
+      // A later change, so the ignored one has had its turn.
+      await Bun.sleep(100);
+      const done = next((u) => u.stage === "done" && u.reason === "change");
+      await writeFile(join(dir, "src/Added.svelte"), "<p>a</p>\n");
+      await done;
+      expect(updates.flatMap((u) => u.changed)).not.toContain(
+        "dist/Built.svelte",
+      );
+      expect(
+        updates.at(-1)?.diagnostics.some((d) => d.file.startsWith("dist/")),
       ).toBe(false);
     } finally {
       watcher.close();
