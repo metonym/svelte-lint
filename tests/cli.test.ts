@@ -82,4 +82,15 @@ describe("cli", () => {
     expect(run(["--watch", "--fix"]).code).toBe(2);
     expect(run(["--help"]).out).toStartWith("Usage: svelte-lint");
   });
+
+  it("exits 2 on a path that doesn't exist, and warns of a named file it skips", () => {
+    const missing = run(["--no-cache", "src/Nope.svelte"]);
+    expect(missing.code).toBe(2);
+    expect(missing.err).toContain("src/Nope.svelte: no such file or folder");
+    const ignored = run(["--no-cache", "--no-color", "src/Ignored.svelte"]);
+    expect(ignored.code).toBe(0);
+    expect(ignored.err).toContain(
+      "warning: src/Ignored.svelte isn't linted: ignorePatterns in bunfig.toml skip it.",
+    );
+  });
 });

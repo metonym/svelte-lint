@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+**Fixes**
+
+- A path named on the command line is no longer skipped without a
+  word (#2). As in `bun lint`, a named path that git ignores, or in a
+  dot folder, is linted; a named file that `ignorePatterns` skip, or
+  that isn't a `.svelte` file, is skipped with a warning; and a path
+  that doesn't exist, or a folder with no component to lint, exits 2.
+  The API's `lint` throws for those, and its result lists the skipped
+  files in `skipped`.
+
 ## 0.1.2 — 2026-11-12
 
 **Fixes**
