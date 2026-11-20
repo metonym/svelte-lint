@@ -9,8 +9,8 @@ import {
 import { readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { parseImportsExports } from "sveast";
-import { lexDynamicImports } from "sveast/lexer";
+import { parseImportsExports } from "svelte-ast";
+import { lexDynamicImports } from "svelte-ast/lexer";
 
 const root = resolve(import.meta.dir, "..");
 const dist = join(root, "dist");
@@ -45,7 +45,7 @@ try {
   ok("bun", ["run", "build"], root);
 
   // The bundle imports Bun's and Node's builtins, its own chunks and
-  // Svelte's compiler (the project's): no dependencies, sveast included.
+  // Svelte's compiler (the project's): no dependencies, svelte-ast included.
   for (const file of await readdir(dist)) {
     if (!file.endsWith(".js")) continue;
     // A parser, not a regex: the bundled parser's strings look like imports.

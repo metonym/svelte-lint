@@ -19,7 +19,7 @@ const GENERATED: Record<string, string> = {
   "IgnoredScript.svelte": `<script>\n  let { value } = $props();\n  // svelte-ignore state_referenced_locally\n  let count = $state(value);\n  const doubled = count * 2;\n</script>\n\n<p>{doubled}</p>\n`,
 };
 
-/** What Svelte 5's `compile` warns, but the a11y warnings, as sveast gives them. */
+/** What Svelte 5's `compile` warns, but the a11y warnings, as svelte-ast gives them. */
 function compiled({ file, source }: Job): CompilerWarning[] {
   try {
     return compile(source, { filename: file, generate: false })
@@ -36,7 +36,7 @@ function compiled({ file, source }: Job): CompilerWarning[] {
   }
 }
 
-describe("svelte/compiler from sveast", () => {
+describe("svelte/compiler from svelte-ast", () => {
   it("warns as the project's Svelte 5 compiles, on the fixtures and generated components", async () => {
     const fixtures = await Promise.all(
       (await readdir(join(FIXTURES, "src")))
