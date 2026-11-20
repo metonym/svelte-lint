@@ -1,5 +1,5 @@
-import type { AST } from "sveast";
-import { markupVisitorKeys, walk } from "sveast/walk";
+import type { AST } from "svelte-ast";
+import { markupVisitorKeys, walk } from "svelte-ast/walk";
 import type { Diagnostic, Fix } from "./diagnostic.ts";
 import type { Emitted } from "./emit.ts";
 
