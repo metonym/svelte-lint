@@ -1,6 +1,6 @@
-import { ParseError } from "sveast";
-import { a11yWarnings } from "sveast/a11y";
-import { compilerWarnings as portedWarnings } from "sveast/warnings";
+import { ParseError } from "svelte-ast";
+import { a11yWarnings } from "svelte-ast/a11y";
+import { compilerWarnings as portedWarnings } from "svelte-ast/warnings";
 import type { Diagnostic } from "./diagnostic.ts";
 import { emit, type Facts, facts, type Segment } from "./emit.ts";
 import { lintTemplate, templateRules } from "./template-rules.ts";
@@ -10,7 +10,7 @@ export interface Job {
   source: string;
   /**
    * Whether `analyze` gives the compiler's other warnings too, from
-   * sveast's port of Svelte 5's, without compiling.
+   * svelte-ast's port of Svelte 5's, without compiling.
    */
   compiler?: boolean;
 }
@@ -28,9 +28,9 @@ export interface Analysis {
   };
   /** Every template rule's problems, as errors; the main thread applies the config. */
   template: Diagnostic[];
-  /** The Svelte compiler's a11y warnings, from sveast's port of its checks. */
+  /** The Svelte compiler's a11y warnings, from svelte-ast's port of its checks. */
   a11y: CompilerWarning[];
-  /** The compiler's other warnings, from sveast's port, when the job asks for them. */
+  /** The compiler's other warnings, from svelte-ast's port, when the job asks for them. */
   compiler?: CompilerWarning[];
   syntax?: Diagnostic;
 }
@@ -105,7 +105,7 @@ export function analyze({ file, source, compiler = false }: Job): Analysis {
 }
 
 /**
- * sveast's port of the compiler's warnings, or none when the CSS didn't
+ * svelte-ast's port of the compiler's warnings, or none when the CSS didn't
  * parse. On the AST `parse` returned, which records two of them. No
  * `customElement`: svelte-lint has no such option, and
  * `<svelte:options customElement>` counts without it.

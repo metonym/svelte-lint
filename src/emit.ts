@@ -1,5 +1,5 @@
-import { analyzeScopes, type AST, isRunesMode, parse } from "sveast";
-import { SKIP, visitorKeys, walk } from "sveast/walk";
+import { analyzeScopes, type AST, isRunesMode, parse } from "svelte-ast";
+import { SKIP, visitorKeys, walk } from "svelte-ast/walk";
 
 type Scopes = ReturnType<typeof analyzeScopes>;
 interface Node {
