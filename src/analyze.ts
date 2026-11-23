@@ -115,25 +115,38 @@ export function analyze({ file, source, compiler = false }: Job): Analysis {
       facts: facts(emitted),
     },
     template: lintTemplate(file, source, emitted, ALL_RULES),
-    a11y: a11yWarnings(emitted.ast, { runes: emitted.runes }),
-    compiler: compiler ? ported(emitted, { full, source, file }) : undefined,
+    ...warnings(emitted, { compiler, full, source, file }),
   };
 }
 
-/**
- * svelte-ast's port of the compiler's warnings, or none when the CSS
- * didn't parse. On the AST `parse` returned, which records two of them. No
- * `customElement`: svelte-lint has no such option, and
- * `<svelte:options customElement>` counts without it.
- */
-function ported(
+// One walk of the markup gives both lists when the compiler's warnings
+// are wanted, so they come from one call. None when the CSS didn't parse,
+// as Svelte fails to compile it too. On the AST `parse` returned, which
+// records two of them. No `customElement`, since svelte-lint has no such
+// option and `<svelte:options customElement>` counts without it.
+function warnings(
   emitted: ReturnType<typeof emit>,
-  { full, source, file }: { full: boolean; source: string; file: string },
-): CompilerWarning[] {
-  if (!full) return [];
-  return portedWarnings(emitted.ast, {
+  {
+    compiler,
+    full,
+    source,
+    file,
+  }: { compiler: boolean; full: boolean; source: string; file: string },
+): { a11y: CompilerWarning[]; compiler: CompilerWarning[] | undefined } {
+  if (!compiler || !full) {
+    return {
+      a11y: a11yWarnings(emitted.ast, { runes: emitted.runes }),
+      compiler: compiler ? [] : undefined,
+    };
+  }
+  const all = portedWarnings(emitted.ast, {
     source,
     filename: file,
     runes: emitted.runes,
+    a11y: true,
   });
+  return {
+    a11y: all.filter((w) => w.code.startsWith("a11y_")),
+    compiler: all.filter((w) => !w.code.startsWith("a11y_")),
+  };
 }
