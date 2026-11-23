@@ -1,8 +1,20 @@
 # svelte-lint
 
-> The Svelte linter for `bun lint`: your `[lint]` rules inside components, plus template rules and the compiler's warnings, a11y included, without compiling. Zero dependencies, cached, with a watch mode.
+The Svelte linter for bun lint, with zero dependencies.
 
-`bun lint` lints JavaScript and TypeScript natively, but not `.svelte` files. svelte-lint turns each component into a module `bun lint` can read, runs it with the rules already in your `bunfig.toml`, and maps every problem and fix back to its line and column in the component. It also checks the markup with its own rules and the Svelte compiler's a11y checks, and caches every component's result, so a run lints only what changed.
+Your `[lint]` rules inside components,
+plus template rules and the compiler's warnings, a11y included,
+without compiling: cached, with a watch mode.
+
+`bun lint` lints JavaScript and TypeScript natively,
+but not `.svelte` files.
+svelte-lint turns each component into a module `bun lint` can read,
+runs it with the rules already in your `bunfig.toml`,
+and maps every problem and fix back to its line
+and column in the component.
+It also checks the markup with its own rules and the Svelte compiler's
+a11y checks, and caches every component's result,
+so a run lints only what changed.
 
 ```sh
 bun add -d svelte-lint
@@ -40,7 +52,9 @@ It needs a Bun with `bun lint`: 1.4.5, or a canary build until it ships.
 | Svelte 3, 4, 5     | Yes                           | Yes                           | Yes, and their `svelte-ignore` codes                 |
 | Cache              | No                            | Opt-in                        | Every run, by content                                |
 
-On carbon-components-svelte's 2,207 components, on an M-series Mac at load average 5 to 8, against Biome 2.6's `.svelte` linting:
+On carbon-components-svelte's 2,207 components,
+on an M-series Mac at load average 5 to 8,
+against Biome 2.6's `.svelte` linting:
 
 | Run                        | Biome         | svelte-lint                           |
 | :------------------------- | :------------ | :------------------------------------ |
@@ -50,9 +64,12 @@ On carbon-components-svelte's 2,207 components, on an M-series Mac at load avera
 | One component (`--staged`) | 0.35s, 351 MB | 0.06s, 32 MB                          |
 | `--watch`, one save        |               | 45ms to the first output, 70ms in all |
 
-ESLint with eslint-plugin-svelte took about 21s for the same components, cold.
+ESLint with eslint-plugin-svelte took about 21s for the same components,
+cold.
 
-Moving from Biome? [docs/biome.md](https://github.com/metonym/svelte-lint/blob/master/docs/biome.md) maps its config and rules to `bunfig.toml`.
+Moving from Biome?
+[docs/biome.md](https://github.com/metonym/svelte-lint/blob/master/docs/biome.md)
+maps its config and rules to `bunfig.toml`.
 
 ## Usage
 
@@ -76,15 +93,33 @@ svelte-lint --watch              # again on each save
 | `--no-cache`            | Lint every component, and keep no cache                                                                                                                                                        |
 | `--color`, `--no-color` | Force color on or off                                                                                                                                                                          |
 
-It exits 1 on an error, or on more warnings than `--max-warnings`, and 2 on a bad option. The project is the nearest folder with a `bunfig.toml`, from the current one up, as `bun lint` finds its config. Its components are the `.svelte` files git tracks or would add, or outside a repository, every one but those in `node_modules` and dot folders.
+It exits 1 on an error, or on more warnings than `--max-warnings`,
+and 2 on a bad option.
+The project is the nearest folder with a `bunfig.toml`,
+from the current one up, as `bun lint` finds its config.
+Its components are the `.svelte` files git tracks or would add,
+or outside a repository, every one but those in `node_modules`
+and dot folders.
 
-A path you name is linted even if git ignores it or it's in a dot folder, as in `bun lint`. A named file that `ignorePatterns` skip, or that isn't a `.svelte` file, is skipped with a warning. A path that doesn't exist, or a folder with no component to lint, exits 2.
+A path you name is linted even if git ignores it
+or it's in a dot folder, as in `bun lint`.
+A named file that `ignorePatterns` skip, or that isn't a `.svelte` file,
+is skipped with a warning.
+A path that doesn't exist, or a folder with no component to lint,
+exits 2.
 
 ## Configuration
 
-Everything lives in `bunfig.toml`. `[lint]` is `bun lint`'s, and lints the components' scripts and markup expressions as it lints your `.ts` files: the same rules, overrides and `// eslint-disable` comments. An override for `src/**/*.svelte` applies to components; `src/**` applies to them and to the `.ts` files. Its `ignorePatterns` skip components too, read as `bun lint` reads them.
+Everything lives in `bunfig.toml`.
+`[lint]` is `bun lint`'s, and lints the components' scripts
+and markup expressions as it lints your `.ts` files: the same rules,
+overrides and `// eslint-disable` comments.
+An override for `src/**/*.svelte` applies to components;
+`src/**` applies to them and to the `.ts` files.
+Its `ignorePatterns` skip components too, read as `bun lint` reads them.
 
-`[svelte-lint]` has the rules for the markup, which `bun lint` doesn't know:
+`[svelte-lint]` has the rules for the markup,
+which `bun lint` doesn't know:
 
 ```toml
 [svelte-lint]
@@ -105,13 +140,25 @@ rules = { "svelte/require-each-key" = "error" }
 | `svelte/a11y`                              | error   | The Svelte compiler's a11y warnings, from [svelte-ast](https://github.com/metonym/svelte-ast)'s port of its checks                                   |
 | `svelte/compiler`                          | warn    | The compiler's other warnings, such as `css_unused_selector` and `state_referenced_locally`, from svelte-ast's port of Svelte 5's, without compiling |
 
-A severity is `"error"`, `"warn"` or `"off"`. `<!-- svelte-ignore code -->` silences a compiler warning as it does in Svelte: in legacy mode, Svelte 4's `a11y-…` codes count too. A syntax error is always reported.
+A severity is `"error"`, `"warn"` or `"off"`.
+`<!-- svelte-ignore code -->` silences a compiler warning as it does in
+Svelte: in legacy mode, Svelte 4's `a11y-…` codes count too.
+A syntax error is always reported.
 
-The compiler's warnings are Svelte 5's, whichever Svelte the project has: a Svelte 3 or 4 component gets the ones Svelte 5 gives it in legacy mode. svelte-lint never loads the project's `svelte`. With a type checker, it covers what svelte-check reports. Run svelte-typecheck or svelte-check with `--diagnostic-sources js`, so it checks types only: it doesn't compile, which is faster, and doesn't report each warning a second time.
+The compiler's warnings are Svelte 5's,
+whichever Svelte the project has: a Svelte 3 or 4 component gets the
+ones Svelte 5 gives it in legacy mode.
+svelte-lint never loads the project's `svelte`.
+With a type checker, it covers what svelte-check reports.
+Run svelte-typecheck or svelte-check with `--diagnostic-sources js`,
+so it checks types only: it doesn't compile, which is faster,
+and doesn't report each warning a second time.
 
 ### Svelte's idioms
 
-The script rules stay on in components, and svelte-lint drops only the reports for what Svelte does on purpose, so the same code anywhere else is still reported:
+The script rules stay on in components,
+and svelte-lint drops only the reports for what Svelte does on purpose,
+so the same code anywhere else is still reported:
 
 | Rule               | Allowed                                                                                   |
 | :----------------- | :---------------------------------------------------------------------------------------- |
@@ -121,7 +168,9 @@ The script rules stay on in components, and svelte-lint drops only the reports f
 | `prefer-const`     | `let` for props from `$props()` and for `$derived`                                        |
 | `no-unused-vars`   | `$$Props`, `$$Events` and `$$Slots`                                                       |
 
-What the markup reads and writes counts too: a variable `bind:` writes isn't `prefer-const`, and an import only the markup uses isn't unused.
+What the markup reads and writes counts too: a variable `bind:`
+writes isn't `prefer-const`, and an import only the markup uses isn't
+unused.
 
 ## API
 
@@ -137,21 +186,56 @@ const watcher = await watch({
 watcher.close();
 ```
 
-`lint` takes the CLI's options (`cwd`, `paths`, `staged`, `changed`, `fix`, `cache`) and returns each problem with its file, rule, severity, message, lines and columns, offsets and fix. `watch` calls `onUpdate` with every watched component's problems: first with the template and a11y problems of what changed, then with `bun lint`'s.
+`lint` takes the CLI's options
+(`cwd`, `paths`, `staged`, `changed`, `fix`, `cache`)
+and returns each problem with its file, rule, severity, message,
+lines and columns, offsets and fix.
+`watch` calls `onUpdate` with every watched component's problems:
+first with the template and a11y problems of what changed,
+then with `bun lint`'s.
 
 ## How it works
 
-Each component becomes a module at the same offsets: its `<script>`s as they are, the markup blanked to spaces with its line breaks kept, and the markup's expressions after them. A part `bun lint` doesn't lint, in `eslint-disable` comments, says what the markup and Svelte do to the scripts' names: which ones the markup reads and writes, that a parent writes the props, that `$count` reads `count`, and the names Svelte declares. `bun lint` lints the modules in a temporary folder with your `[lint]`, and each problem and fix maps back to the component. The folder links to the rest of the project, so rules that resolve imports, such as `import/no-cycle` and `import/no-unresolved`, see the same files and packages as in the project. The template rules and a11y checks run on the same parse, by [svelte-ast](https://github.com/metonym/svelte-ast), which is bundled, so the package has no dependencies. So do `svelte/compiler`'s warnings, from svelte-ast's port of Svelte 5's, which gives the same codes, messages and positions as `compile` in a fraction of the time; that parse keeps the `<style>` and the scripts' comments, which they read.
+Each component becomes a module at the same offsets:
+its `<script>`s as they are, the markup blanked to spaces with its line
+breaks kept, and the markup's expressions after them.
+A part `bun lint` doesn't lint, in `eslint-disable` comments,
+says what the markup and Svelte do to the scripts' names:
+which ones the markup reads and writes, that a parent writes the props,
+that `$count` reads `count`, and the names Svelte declares.
+`bun lint` lints the modules in a temporary folder with your `[lint]`,
+and each problem and fix maps back to the component.
+The folder links to the rest of the project,
+so rules that resolve imports, such as `import/no-cycle`
+and `import/no-unresolved`, see the same files and packages as in the
+project.
+The template rules and a11y checks run on the same parse,
+by [svelte-ast](https://github.com/metonym/svelte-ast),
+which is bundled, so the package has no dependencies.
+So do `svelte/compiler`'s warnings, from svelte-ast's port of Svelte
+5's, which gives the same codes, messages and positions as `compile` in
+a fraction of the time; that parse keeps the `<style>`
+and the scripts' comments, which they read.
 
-A component whose size and modification time haven't changed since the last run isn't read; one whose content hasn't changed isn't parsed or linted. Results are kept in `node_modules/.cache/svelte-lint`, keyed by svelte-lint's version, `bunfig.toml` and Bun. A component with a problem from an `import/` rule is linted every run, since a change to another file can fix it. In CI, restore that folder between runs.
+A component whose size and modification time haven't changed since the
+last run isn't read; one whose content hasn't changed isn't parsed
+or linted.
+Results are kept in `node_modules/.cache/svelte-lint`,
+keyed by svelte-lint's version, `bunfig.toml` and Bun.
+A component with a problem from an `import/` rule is linted every run,
+since a change to another file can fix it.
+In CI, restore that folder between runs.
 
 ## Limitations
 
-- A component that parses but fails the compiler's analysis, such as one with an invalid attribute name, isn't reported. Your build reports it.
-- Each run, and each change in `--watch`, starts a `bun lint` process, which is most of the time a small change takes.
-- `svelte/a11y` follows Svelte 5's checks, whichever Svelte the project has.
-- Only components are linted for the compiler's warnings, not Svelte modules (`.svelte.js`, `.svelte.ts`). svelte-typecheck and svelte-check report those with their `svelte` diagnostic source.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+- A component that parses but fails the compiler's analysis,
+  such as one with an invalid attribute name, isn't reported.
+  Your build reports it.
+- Each run, and each change in `--watch`, starts a `bun lint` process,
+  which is most of the time a small change takes.
+- `svelte/a11y` follows Svelte 5's checks,
+  whichever Svelte the project has.
+- Only components are linted for the compiler's warnings,
+  not Svelte modules (`.svelte.js`, `.svelte.ts`).
+  svelte-typecheck and svelte-check report those with their `svelte`
+  diagnostic source.

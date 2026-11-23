@@ -11,6 +11,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+
 import type { Analysis } from "./analyze.ts";
 import { moduleBunfig } from "./config.ts";
 import { type Diagnostic, type Fix, lineStarts, offset } from "./diagnostic.ts";
@@ -53,7 +54,10 @@ const modulePath = (component: Component): string =>
  */
 const TMP = realpathSync.native(tmpdir());
 
-/** The folder of modules for `root`: outside it, so its `.gitignore` doesn't hide them. */
+/**
+ * The folder of modules for `root`: outside it, so its `.gitignore`
+ * doesn't hide them.
+ */
 const moduleDir = (root: string): string =>
   join(
     TMP,
@@ -113,7 +117,8 @@ export async function startScriptLint(
         unlinkSync(link);
     }),
   );
-  // Per process too: another run, such as `--watch`, may lint the same project.
+  // Per process too: another run, such as `--watch`, may lint the same
+  // project.
   const report = join(dir, `.report-${process.pid}-${id}.json`);
   rmSync(report, { force: true });
   const child = Bun.spawn(
@@ -226,7 +231,8 @@ const TYPESCRIPT_ESLINT = /^@typescript-eslint\//;
 const RULE = (id: string | null): string =>
   (id ?? "").replace(TYPESCRIPT_ESLINT, "");
 
-// The props, events and slots of a TypeScript component, which Svelte reads.
+// The props, events and slots of a TypeScript component, which Svelte
+// reads.
 const SVELTE_TYPES = new Set(["$$Props", "$$Events", "$$Slots"]);
 
 /**

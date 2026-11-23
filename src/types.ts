@@ -1,9 +1,12 @@
-// The package's public API, as consumers see it: the build copies this file
-// as dist/index.d.ts, so it imports nothing and holds only declarations.
-// tests/api.test.ts fails when an implementation's signature drifts from
-// its declaration here.
+// The package's public API, as consumers see it: the build copies this
+// file as dist/index.d.ts, so it imports nothing and holds only
+// declarations. tests/api.test.ts fails when an implementation's signature
+// drifts from its declaration here.
 
-/** A change that fixes a problem: replace `start` to `end` of the component with `text`. */
+/**
+ * A change that fixes a problem: replace `start` to `end` of the component
+ * with `text`.
+ */
 export interface Fix {
   start: number;
   end: number;
@@ -46,7 +49,10 @@ export interface LintOptions {
   paths?: string[];
   /** Only the components staged in git. */
   staged?: boolean;
-  /** Only the components that differ from this ref, committed or not; `true` for the default branch. */
+  /**
+   * Only the components that differ from this ref, committed or not; `true`
+   * for the default branch.
+   */
   changed?: string | true;
   /** Apply the fixes, and lint the fixed components again, up to 10 times. */
   fix?: boolean;
@@ -61,7 +67,10 @@ export interface LintOptions {
 export interface Skipped {
   /** As named in `paths`. */
   path: string;
-  /** `ignored`: `ignorePatterns` in `bunfig.toml` skip it. `not a component`: it isn't a `.svelte` file. */
+  /**
+   * `ignored`: `ignorePatterns` in `bunfig.toml` skip it. `not a component`:
+   * it isn't a `.svelte` file.
+   */
   reason: "ignored" | "not a component";
 }
 
@@ -85,7 +94,10 @@ export interface WatchUpdate {
    * everything is in. `removed`: components were deleted.
    */
   stage: "template" | "done" | "removed";
-  /** Why it ran: the first run, a changed component, or a changed `bunfig.toml`. */
+  /**
+   * Why it ran: the first run, a changed component, or a changed
+   * `bunfig.toml`.
+   */
   reason: "start" | "change" | "config";
   /** The components this update is about. */
   changed: string[];
@@ -111,5 +123,8 @@ export interface Watcher {
 /** Lints a project's `.svelte` components. */
 export declare function lint(options?: LintOptions): Promise<LintResult>;
 
-/** Lints a project's components, then again each time one, or `bunfig.toml`, changes. */
+/**
+ * Lints a project's components, then again each time one, or
+ * `bunfig.toml`, changes.
+ */
 export declare function watch(options: WatchOptions): Promise<Watcher>;

@@ -6,6 +6,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
+
 import { version } from "../package.json";
 import type { Diagnostic } from "./diagnostic.ts";
 
@@ -32,9 +33,9 @@ const CODE = /\.[jt]s$/;
 
 /**
  * What every cached result depends on besides the component: svelte-lint
- * itself, with the svelte-ast it bundles, `bunfig.toml` and Bun. Any change
- * empties the cache. svelte-lint's own code counts as well as its version, so
- * a change to it in development counts too.
+ * itself, with the svelte-ast it bundles, `bunfig.toml` and Bun. Any
+ * change empties the cache. svelte-lint's own code counts as well as its
+ * version, so a change to it in development counts too.
  */
 export function cacheKey(bunfig: string): string {
   const parts = [version, bunfig, Bun.revision];

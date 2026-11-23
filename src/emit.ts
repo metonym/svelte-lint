@@ -12,7 +12,10 @@ interface Identifier extends Node {
   name: string;
 }
 
-/** A markup expression copied into the module, at `module` instead of `source`. */
+/**
+ * A markup expression copied into the module, at `module` instead of
+ * `source`.
+ */
 export interface Segment {
   module: number;
   source: number;
@@ -20,7 +23,8 @@ export interface Segment {
 }
 
 /**
- * A component as a JavaScript or TypeScript module that `bun lint` can read.
+ * A component as a JavaScript or TypeScript module that `bun lint` can
+ * read.
  *
  * Its `<script>`s keep their offsets: everything around them is blanked
  * to spaces, line breaks kept, so a problem in a script is at the same
@@ -112,7 +116,10 @@ const DECLARES = new Set([
 const LINE = /[^\n\r]+/g;
 const TYPESCRIPT = /^(ts|typescript)$/;
 
-/** `text` as spaces, line breaks kept: a run at a time, 3x faster than a character at a time. */
+/**
+ * `text` as spaces, line breaks kept: a run at a time, 3x faster than a
+ * character at a time.
+ */
 function blank(text: string): string {
   return text.replace(LINE, (run) => " ".repeat(run.length));
 }
@@ -346,7 +353,10 @@ export function emit(source: string, full = false): Emitted {
   return { code, typescript, scripts, segments, ast, scopes, runes };
 }
 
-/** The component offset for `offset` in the module, or `null` outside the linted code. */
+/**
+ * The component offset for `offset` in the module, or `null` outside the
+ * linted code.
+ */
 export function toSource(
   emitted: Pick<Emitted, "scripts" | "segments">,
   offset: number,

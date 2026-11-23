@@ -1,6 +1,12 @@
 # Moving from Biome
 
-Biome lints and formats `.svelte` files in one tool. Without it, `bun fmt` formats them, `bun lint` lints your `.ts` and `.js` files, and svelte-lint lints the components with the same `[lint]` rules. This page maps a `biome.json` to `bunfig.toml`. It comes from moving carbon-preprocess-svelte and svelte-time off Biome 2.
+Biome lints and formats `.svelte` files in one tool.
+Without it, `bun fmt` formats them, `bun lint` lints your `.ts`
+and `.js` files, and svelte-lint lints the components with the same
+`[lint]` rules.
+This page maps a `biome.json` to `bunfig.toml`.
+It comes from moving carbon-preprocess-svelte
+and svelte-time off Biome 2.
 
 ```diff
 - "lint": "biome check --write .",
@@ -8,7 +14,10 @@ Biome lints and formats `.svelte` files in one tool. Without it, `bun fmt` forma
 + "lint:svelte": "svelte-lint",
 ```
 
-Don't call the script `lint`: on a Bun without `bun lint`, `bun lint` runs the `lint` script, which would then call itself. In CI, `biome ci` becomes `bun fmt --check`, `bun lint` and `svelte-lint`, which write nothing.
+Don't call the script `lint`: on a Bun without `bun lint`,
+`bun lint` runs the `lint` script, which would then call itself.
+In CI, `biome ci` becomes `bun fmt --check`,
+`bun lint` and `svelte-lint`, which write nothing.
 
 ## Config
 
@@ -21,7 +30,9 @@ Don't call the script `lint`: on a Bun without `bun lint`, `bun lint` runs the `
 | `formatter`, `html.formatter`                                         | `[fmt]`. `bun fmt` formats `.svelte` files unless the project has a Prettier or oxfmt config                       |
 | `markdown.formatter.enabled = false`                                  | `ignorePatterns = ["**/*.md"]` in `[fmt]`                                                                          |
 
-`bun fmt` moves a component's `<script>` to the top and its `<style>` to the bottom. Biome keeps them where they are, and so does this:
+`bun fmt` moves a component's `<script>` to the top
+and its `<style>` to the bottom.
+Biome keeps them where they are, and so does this:
 
 ```toml
 [fmt.svelte]
@@ -64,7 +75,9 @@ sortOrder = "none"
 | `useNumberNamespace`           | `unicorn/prefer-number-properties`                                                       |
 | `useSingleVarDeclarator`       | `one-var`, with `"never"`                                                                |
 
-`bun lint` has no rule for `noDelete`, `noEnum`, `noNamespaceImport`, `noReExportAll`, `noUnusedTemplateLiteral` or `useTopLevelRegex`. These `no-restricted-syntax` selectors report the same code:
+`bun lint` has no rule for `noDelete`, `noEnum`, `noNamespaceImport`,
+`noReExportAll`, `noUnusedTemplateLiteral` or `useTopLevelRegex`.
+These `no-restricted-syntax` selectors report the same code:
 
 ```toml
 "no-restricted-syntax" = [
@@ -84,10 +97,15 @@ sortOrder = "none"
 ]
 ```
 
-An override's `no-restricted-syntax` replaces this list, it doesn't add to it. To turn one selector off for the tests, repeat the others in the override.
+An override's `no-restricted-syntax` replaces this list,
+it doesn't add to it.
+To turn one selector off for the tests,
+repeat the others in the override.
 
 A few rules have nothing to map to:
 
-- `noDynamicNamespaceImportAccess`: no rule, but banning namespace imports covers most of it.
+- `noDynamicNamespaceImportAccess`: no rule,
+  but banning namespace imports covers most of it.
 - `noImportantStyles`: `bun lint` doesn't read CSS.
-- `noUselessFragments`, `noImplicitBoolean` and the other JSX rules: a component has no JSX.
+- `noUselessFragments`, `noImplicitBoolean` and the other JSX rules:
+  a component has no JSX.

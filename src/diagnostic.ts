@@ -17,7 +17,10 @@ export interface Fix {
   text: string;
 }
 
-/** Offsets of the start of each line, for converting to and from lines and columns. */
+/**
+ * Offsets of the start of each line, for converting to and from lines and
+ * columns.
+ */
 export function lineStarts(text: string): number[] {
   const starts = [0];
   for (let i = 0; i < text.length; i++) {

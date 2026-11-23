@@ -1,6 +1,7 @@
 import { ParseError } from "svelte-ast";
 import { a11yWarnings } from "svelte-ast/a11y";
 import { compilerWarnings as portedWarnings } from "svelte-ast/warnings";
+
 import type { Diagnostic } from "./diagnostic.ts";
 import { emit, type Facts, facts, type Segment } from "./emit.ts";
 import { lintTemplate, templateRules } from "./template-rules.ts";
@@ -15,7 +16,10 @@ export interface Job {
   compiler?: boolean;
 }
 
-/** What svelte-lint learns about a component, as plain data, so its AST can go. */
+/**
+ * What svelte-lint learns about a component, as plain data, so its AST can
+ * go.
+ */
 export interface Analysis {
   file: string;
   /** The module for `bun lint`; absent after a syntax error. */
@@ -26,11 +30,20 @@ export interface Analysis {
     segments: Segment[];
     facts: Facts;
   };
-  /** Every template rule's problems, as errors; the main thread applies the config. */
+  /**
+   * Every template rule's problems, as errors; the main thread applies the
+   * config.
+   */
   template: Diagnostic[];
-  /** The Svelte compiler's a11y warnings, from svelte-ast's port of its checks. */
+  /**
+   * The Svelte compiler's a11y warnings, from svelte-ast's port of its
+   * checks.
+   */
   a11y: CompilerWarning[];
-  /** The compiler's other warnings, from svelte-ast's port, when the job asks for them. */
+  /**
+   * The compiler's other warnings, from svelte-ast's port, when the job asks
+   * for them.
+   */
   compiler?: CompilerWarning[];
   syntax?: Diagnostic;
 }
@@ -66,7 +79,10 @@ function emitFor(
   return { emitted: emit(source), full: false };
 }
 
-/** Turns a component into its module and runs the template rules. The AST stays here. */
+/**
+ * Turns a component into its module and runs the template rules. The AST
+ * stays here.
+ */
 export function analyze({ file, source, compiler = false }: Job): Analysis {
   let emitted: ReturnType<typeof emit>;
   let full: boolean;
@@ -105,8 +121,8 @@ export function analyze({ file, source, compiler = false }: Job): Analysis {
 }
 
 /**
- * svelte-ast's port of the compiler's warnings, or none when the CSS didn't
- * parse. On the AST `parse` returned, which records two of them. No
+ * svelte-ast's port of the compiler's warnings, or none when the CSS
+ * didn't parse. On the AST `parse` returned, which records two of them. No
  * `customElement`: svelte-lint has no such option, and
  * `<svelte:options customElement>` counts without it.
  */

@@ -11,7 +11,10 @@ interface Override {
   rules?: Record<string, unknown>;
 }
 
-/** The `[svelte-lint]` table: the template rules, which `bun lint` doesn't know. */
+/**
+ * The `[svelte-lint]` table: the template rules, which `bun lint` doesn't
+ * know.
+ */
 export interface TemplateConfig {
   rules: Record<string, Severity>;
   overrides: Override[];
@@ -65,7 +68,10 @@ export function templateConfig(
   return { rules, overrides, ignorePatterns: asArray(table.ignorePatterns) };
 }
 
-/** The severity of each template rule for `file`, after the overrides that match it. */
+/**
+ * The severity of each template rule for `file`, after the overrides that
+ * match it.
+ */
 export function rulesFor(
   config: TemplateConfig,
   file: string,
@@ -106,11 +112,12 @@ interface IgnorePattern {
 }
 
 /**
- * A test for the paths `[lint]`'s `ignorePatterns` skip, read as `bun lint`
- * reads them, like a `.gitignore`: a pattern without a slash matches a
- * file or folder name at any depth, one with a slash matches from the
- * root, a trailing slash matches folders only, a later `!pattern` keeps
- * what an earlier one skipped, and nothing in a skipped folder is kept.
+ * A test for the paths `[lint]`'s `ignorePatterns` skip, read as
+ * `bun lint` reads them, like a `.gitignore`: a pattern without a slash
+ * matches a file or folder name at any depth, one with a slash matches
+ * from the root, a trailing slash matches folders only, a later `!pattern`
+ * keeps what an earlier one skipped, and nothing in a skipped folder is
+ * kept.
  */
 export function lintIgnores(bunfig: Toml): (file: string) => boolean {
   const patterns = asArray(((bunfig.lint ?? {}) as Toml).ignorePatterns);

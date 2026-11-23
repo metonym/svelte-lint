@@ -10,7 +10,11 @@ export interface Located extends Diagnostic {
   lines: string[];
 }
 
-const ANSI = {
+type Style = "bold" | "dim" | "red" | "yellow" | "blue" | "cyan" | "reset";
+
+// compat: Bun.build({ dts }) panics on `keyof typeof` an unannotated
+// object, so the styles are named.
+const ANSI: Record<Style, string> = {
   bold: "\x1b[1m",
   dim: "\x1b[2m",
   red: "\x1b[31m",
@@ -47,7 +51,10 @@ export function defaultFormat(
   return agent ? "agent" : "pretty";
 }
 
-/** Each problem with its lines and columns, and its file's lines for a frame. */
+/**
+ * Each problem with its lines and columns, and its file's lines for a
+ * frame.
+ */
 export function locate(
   diagnostics: Diagnostic[],
   sources: Map<string, string>,
@@ -112,7 +119,7 @@ export function report(
       )
       .join("\n");
   }
-  const c = (code: keyof typeof ANSI, text: string) =>
+  const c = (code: Style, text: string) =>
     color ? `${ANSI[code]}${text}${ANSI.reset}` : text;
   const out: string[] = [];
   for (const d of located) {
@@ -166,10 +173,7 @@ export function report(
   return out.join("\n");
 }
 
-function frame(
-  d: Located,
-  c: (code: keyof typeof ANSI, text: string) => string,
-): string[] {
+function frame(d: Located, c: (code: Style, text: string) => string): string[] {
   const width = String(d.line + 1).length;
   const row = (n: number, strong: boolean) => {
     const text = d.lines[n - 1];

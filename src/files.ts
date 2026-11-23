@@ -5,7 +5,10 @@ const LINE_BREAK = /\r?\n/;
 export interface ListMode {
   /** The staged components only. */
   staged?: boolean;
-  /** The components that differ from this ref, committed or not; `true` for the default branch. */
+  /**
+   * The components that differ from this ref, committed or not; `true` for
+   * the default branch.
+   */
   changed?: string | true;
 }
 
@@ -49,7 +52,10 @@ export async function gitIgnored(
   return new Set(code === 0 ? text.split(LINE_BREAK).filter(Boolean) : []);
 }
 
-/** The ref of the default branch: `origin/HEAD`'s, else `main` or `master`, whichever exists. */
+/**
+ * The ref of the default branch: `origin/HEAD`'s, else `main` or `master`,
+ * whichever exists.
+ */
 async function defaultBranch(root: string): Promise<string> {
   const [head] =
     (await git(root, "rev-parse", "--abbrev-ref", "origin/HEAD")) ?? [];

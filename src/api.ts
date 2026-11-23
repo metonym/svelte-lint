@@ -1,5 +1,6 @@
 import { existsSync, statSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
+
 import { findRoot } from "./config.ts";
 import type { Diagnostic as Found } from "./diagnostic.ts";
 import { gitIgnored, listComponents, type ListMode } from "./files.ts";
@@ -104,7 +105,10 @@ export async function select(
   return { root, files, paths: named.map((n) => n.scoped), skipped };
 }
 
-/** Problems with lines and columns, without the frame's lines `report` keeps. */
+/**
+ * Problems with lines and columns, without the frame's lines `report`
+ * keeps.
+ */
 function located(found: Found[], sources: Map<string, string>): Diagnostic[] {
   return locate(found, sources).map(({ lines: _, ...d }) => d);
 }

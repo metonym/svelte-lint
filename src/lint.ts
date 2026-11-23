@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+
 import type { Analysis, CompilerWarning, Job } from "./analyze.ts";
 import { cacheKey, type Entry, hash, loadCache, saveCache } from "./cache.ts";
 import {
@@ -17,7 +18,10 @@ import { templateRules } from "./template-rules.ts";
 const BATCHES = 4;
 const PER_BATCH = 200;
 
-/** Every template rule and compiler pass is on unless `[svelte-lint]` turns it off. */
+/**
+ * Every template rule and compiler pass is on unless `[svelte-lint]` turns
+ * it off.
+ */
 const DEFAULT_RULES: Record<string, Severity> = {
   ...Object.fromEntries(
     Object.keys(templateRules).map((name) => [name, "error"]),
@@ -254,7 +258,10 @@ function compilerHelp(code: string): string {
     : `Fix it, or add ${ignore} above ${where}.`;
 }
 
-/** A component's problems, with each template rule and compiler warning at its configured severity. */
+/**
+ * A component's problems, with each template rule and compiler warning at
+ * its configured severity.
+ */
 function collect(
   analysis: Analysis,
   rules: Record<string, Severity>,

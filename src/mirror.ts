@@ -30,7 +30,10 @@ function isFolder(path: string): boolean {
   }
 }
 
-/** Links `target` at `path`; where links need rights the user lacks, as on Windows, it does without. */
+/**
+ * Links `target` at `path`; where links need rights the user lacks, as on
+ * Windows, it does without.
+ */
 function link(target: string, path: string, folder: boolean): void {
   try {
     symlinkSync(target, path, folder ? "junction" : "file");

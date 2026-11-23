@@ -1,3 +1,0 @@
-<div>
-  {#if true}
-</div>

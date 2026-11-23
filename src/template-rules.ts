@@ -1,5 +1,6 @@
 import type { AST } from "svelte-ast";
 import { markupVisitorKeys, walk } from "svelte-ast/walk";
+
 import type { Diagnostic, Fix } from "./diagnostic.ts";
 import type { Emitted } from "./emit.ts";
 
@@ -31,7 +32,10 @@ function attribute(element: Element, name: string): AST.Attribute | undefined {
   );
 }
 
-/** An attribute's value when the markup spells it out, `true` for a bare one, else `undefined`. */
+/**
+ * An attribute's value when the markup spells it out, `true` for a bare
+ * one, else `undefined`.
+ */
 function staticValue(
   attr: AST.Attribute | undefined,
 ): string | true | undefined {
@@ -163,7 +167,10 @@ export const templateRules: Record<string, TemplateRule> = {
 
 const ELEMENTS = new Set(["RegularElement", "SvelteElement", "Component"]);
 
-/** Runs the template rules that are on, `severity` by name, over one component. */
+/**
+ * Runs the template rules that are on, `severity` by name, over one
+ * component.
+ */
 export function lintTemplate(
   file: string,
   source: string,

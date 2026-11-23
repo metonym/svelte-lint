@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
+
 import { count, select } from "./api.ts";
 import { readBunfig } from "./config.ts";
 import { lint, lintAndFix } from "./lint.ts";

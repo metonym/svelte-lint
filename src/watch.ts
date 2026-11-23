@@ -1,5 +1,6 @@
 import { existsSync, watch as watchFiles } from "node:fs";
 import { join } from "node:path";
+
 import type { Diagnostic } from "./diagnostic.ts";
 import { gitIgnored } from "./files.ts";
 import {
