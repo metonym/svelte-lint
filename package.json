@@ -24,5 +24,8 @@
   "engines": {
     "bun": ">=1.4.4"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "devDependencies": {
+    "svelte-ast": "0.12.1"
+  }
 }
