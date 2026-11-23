@@ -31,7 +31,7 @@ const DEFAULT_RULES: Record<string, Severity> = {
   "svelte/compiler": "warn",
 };
 
-export interface LintResult {
+interface LintResult {
   diagnostics: Diagnostic[];
   sources: Map<string, string>;
 }

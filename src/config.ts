@@ -15,7 +15,7 @@ interface Override {
  * The `[svelte-lint]` table: the template rules, which `bun lint` doesn't
  * know.
  */
-export interface TemplateConfig {
+interface TemplateConfig {
   rules: Record<string, Severity>;
   overrides: Override[];
   ignorePatterns: string[];

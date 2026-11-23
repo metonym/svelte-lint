@@ -2,7 +2,7 @@ import { type Diagnostic, lineStarts, position } from "./diagnostic.ts";
 
 export type Format = "pretty" | "agent" | "json" | "github";
 
-export interface Located extends Diagnostic {
+interface Located extends Diagnostic {
   line: number;
   column: number;
   endLine: number;

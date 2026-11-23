@@ -34,7 +34,7 @@ interface Update {
   reason: "start" | "change" | "config";
 }
 
-export interface WatchOptions {
+interface WatchOptions {
   root: string;
   files: string[];
   /** Only components under these paths, relative to `root`, if any. */
