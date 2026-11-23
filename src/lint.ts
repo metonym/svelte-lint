@@ -197,8 +197,7 @@ export async function lint(
           ]
         : [],
     );
-    // This awaits the writes and the spawn, not the lint.
-    // eslint-disable-next-line no-await-in-loop
+    // eslint-disable-next-line no-await-in-loop -- awaits the writes and the spawn, not the lint
     const lintStarted = await scriptRules.startScriptLint(root, components, n);
     started.push(lintStarted);
   }
@@ -330,8 +329,7 @@ export async function lintAndFix(
       fixed.add(file);
     }
     if (fixed.size === 0) break;
-    // Each pass lints what the one before it fixed.
-    // eslint-disable-next-line no-await-in-loop
+    // eslint-disable-next-line no-await-in-loop -- each pass lints what the one before it fixed
     const again = await lint(root, [...fixed], options);
     const rest = result.diagnostics.filter((d) => !fixed.has(d.file));
     for (const [file, source] of again.sources)
