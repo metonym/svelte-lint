@@ -27,7 +27,7 @@ function asArray(value: unknown): string[] {
 }
 
 function severity(value: unknown): Severity {
-  const level = Array.isArray(value) ? value[0] : value;
+  const level: unknown = Array.isArray(value) ? value[0] : value;
   if (level === 2 || level === "error") return "error";
   if (level === 1 || level === "warn") return "warn";
   return "off";

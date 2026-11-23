@@ -44,6 +44,7 @@ function staticValue(
   const values = Array.isArray(attr.value) ? attr.value : [attr.value];
   if (values.length === 1) {
     const [value] = values;
+    if (!value) return undefined;
     if (value.type === "Text") return value.data;
     if (value.expression.type === "Literal")
       return String(value.expression.value);
