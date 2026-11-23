@@ -38,10 +38,10 @@ export function position(
   let high = starts.length - 1;
   while (low < high) {
     const mid = (low + high + 1) >> 1;
-    if (starts[mid] <= at) low = mid;
+    if ((starts[mid] ?? Infinity) <= at) low = mid;
     else high = mid - 1;
   }
-  return { line: low + 1, column: at - starts[low] + 1 };
+  return { line: low + 1, column: at - (starts[low] ?? 0) + 1 };
 }
 
 export function offset(starts: number[], line: number, column: number): number {

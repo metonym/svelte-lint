@@ -118,14 +118,17 @@ export async function lint(
   // Unchanged since the last run, by size and time, so not read at all
   // unless its problems are printed. The rest are read in parallel, 2 to
   // 10x faster than one at a time.
-  const stats = files.map((file) => statSync(join(root, file)));
-  const unchanged = files.map((file, n) => {
+  const stats = files.map((file) => ({
+    file,
+    stat: statSync(join(root, file)),
+  }));
+  const unchanged = stats.map(({ file, stat }) => {
     const cached = cache[file];
     return (
       cached != null &&
       !readsOtherFiles(cached) &&
-      cached.size === stats[n].size &&
-      cached.mtime === stats[n].mtimeMs
+      cached.size === stat.size &&
+      cached.mtime === stat.mtimeMs
     );
   });
   const read = await Promise.all(
@@ -135,7 +138,7 @@ export async function lint(
         : undefined,
     ),
   );
-  for (const [n, file] of files.entries()) {
+  for (const [n, { file, stat }] of stats.entries()) {
     const cached = cache[file];
     const source = read[n];
     if (source !== undefined) sources.set(file, source);
@@ -143,8 +146,8 @@ export async function lint(
       diagnostics.push(...cached.diagnostics);
       continue;
     }
-    const size = stats[n].size;
-    const mtime = stats[n].mtimeMs;
+    const size = stat.size;
+    const mtime = stat.mtimeMs;
     const sourceHash = hash(source ?? "");
     meta.set(file, { hash: sourceHash, size, mtime });
     // Touched, as by a checkout, but the same.
