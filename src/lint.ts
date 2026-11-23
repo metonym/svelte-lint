@@ -289,7 +289,7 @@ function collect(
         rule: `svelte/${warning.code}`,
         severity: level,
         // The first line; the second links to the docs.
-        message: warning.message.split("\n")[0],
+        message: warning.message.split("\n")[0] ?? warning.message,
         start: warning.start,
         end: warning.end,
         help: compilerHelp(warning.code),

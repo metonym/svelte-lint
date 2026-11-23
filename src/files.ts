@@ -4,12 +4,12 @@ const LINE_BREAK = /\r?\n/;
 
 export interface ListMode {
   /** The staged components only. */
-  staged?: boolean;
+  staged?: boolean | undefined;
   /**
    * The components that differ from this ref, committed or not; `true` for
    * the default branch.
    */
-  changed?: string | true;
+  changed?: string | true | undefined;
 }
 
 /**

@@ -132,11 +132,11 @@ function warnings(
     source,
     file,
   }: { compiler: boolean; full: boolean; source: string; file: string },
-): { a11y: CompilerWarning[]; compiler: CompilerWarning[] | undefined } {
+): { a11y: CompilerWarning[]; compiler?: CompilerWarning[] } {
   if (!compiler || !full) {
     return {
       a11y: a11yWarnings(emitted.ast, { runes: emitted.runes }),
-      compiler: compiler ? [] : undefined,
+      ...(compiler && { compiler: [] }),
     };
   }
   const all = portedWarnings(emitted.ast, {

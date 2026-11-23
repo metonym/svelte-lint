@@ -195,8 +195,8 @@ export function lintTemplate(
           message,
           start: node.start,
           end: node.end,
-          fix,
-          help,
+          ...(fix && { fix }),
+          ...(help !== undefined && { help }),
         });
       },
     };

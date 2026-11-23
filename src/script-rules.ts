@@ -223,7 +223,7 @@ function toDiagnostic(
     message: message.message,
     start,
     end: Math.max(end, start),
-    fix,
+    ...(fix && { fix }),
   };
 }
 
