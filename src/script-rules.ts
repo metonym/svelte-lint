@@ -13,7 +13,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import type { Analysis } from "./analyze.ts";
-import { moduleBunfig } from "./config.ts";
+import { isTable, moduleBunfig } from "./config.ts";
 import { type Diagnostic, type Fix, lineStarts, offset } from "./diagnostic.ts";
 import { toSource } from "./emit.ts";
 import { mirror } from "./mirror.ts";
@@ -39,6 +39,15 @@ interface EslintMessage {
 interface EslintResult {
   filePath: string;
   messages: EslintMessage[];
+}
+
+// Only the fields read are checked, since the rest is bun lint's own.
+function isEslintResult(value: unknown): value is EslintResult {
+  return (
+    isTable(value) &&
+    typeof value.filePath === "string" &&
+    Array.isArray(value.messages)
+  );
 }
 
 const SEPARATOR = /[\\/]/;
@@ -151,7 +160,8 @@ async function collectReport(
       `bun lint didn't write a report: svelte-lint needs a Bun with \`bun lint\`, 1.4.5 or a canary build, and runs ${process.execPath} (${Bun.version}).\n${stderr}`,
     );
   }
-  const results = JSON.parse(readFileSync(report, "utf8")) as EslintResult[];
+  const parsed: unknown = JSON.parse(readFileSync(report, "utf8"));
+  const results = Array.isArray(parsed) ? parsed.filter(isEslintResult) : [];
   rmSync(report, { force: true });
   for (const result of results) {
     if (result.messages.length === 0) continue;

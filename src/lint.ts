@@ -7,6 +7,7 @@ import {
   lintIgnores,
   rulesFor,
   type Severity,
+  tableOf,
   templateConfig,
 } from "./config.ts";
 import type { Diagnostic } from "./diagnostic.ts";
@@ -66,7 +67,7 @@ export function openSession(
   const bunfigText = existsSync(bunfigPath)
     ? readFileSync(bunfigPath, "utf8")
     : "";
-  const bunfig = Bun.TOML.parse(bunfigText) as Record<string, unknown>;
+  const bunfig = tableOf(Bun.TOML.parse(bunfigText));
   const key = cacheKey(bunfigText);
   return {
     bunfig,
@@ -350,14 +351,11 @@ export async function lintAndFix(
 export function filterComponents(root: string, files: string[]): string[] {
   const bunfigPath = join(root, "bunfig.toml");
   const bunfig = existsSync(bunfigPath)
-    ? Bun.TOML.parse(readFileSync(bunfigPath, "utf8"))
+    ? tableOf(Bun.TOML.parse(readFileSync(bunfigPath, "utf8")))
     : {};
-  const config = templateConfig(
-    bunfig as Record<string, unknown>,
-    DEFAULT_RULES,
-  );
+  const config = templateConfig(bunfig, DEFAULT_RULES);
   const ignore = config.ignorePatterns.map((p) => new Bun.Glob(p));
-  const lintIgnored = lintIgnores(bunfig as Record<string, unknown>);
+  const lintIgnored = lintIgnores(bunfig);
   return [...new Set(files)].filter(
     (file) =>
       existsSync(join(root, file)) &&

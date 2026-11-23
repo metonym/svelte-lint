@@ -166,8 +166,6 @@ export const templateRules: Record<string, TemplateRule> = {
   },
 };
 
-const ELEMENTS = new Set(["RegularElement", "SvelteElement", "Component"]);
-
 /**
  * Runs the template rules that are on, `severity` by name, over one
  * component.
@@ -203,16 +201,17 @@ export function lintTemplate(
     return { rule, context };
   });
   walk(
-    emitted.ast.fragment as never,
+    emitted.ast.fragment,
     {
       enter(node) {
-        const n = node as unknown as { type: string };
-        if (ELEMENTS.has(n.type)) {
-          for (const { rule, context } of contexts)
-            rule.check(n as Element, context);
-        } else if (n.type === "EachBlock") {
-          for (const { rule, context } of contexts)
-            rule.each?.(n as AST.EachBlock, context);
+        if (
+          node.type === "RegularElement" ||
+          node.type === "SvelteElement" ||
+          node.type === "Component"
+        ) {
+          for (const { rule, context } of contexts) rule.check(node, context);
+        } else if (node.type === "EachBlock") {
+          for (const { rule, context } of contexts) rule.each?.(node, context);
         }
       },
     },

@@ -5,6 +5,21 @@ export type Severity = "error" | "warn" | "off";
 
 type Toml = Record<string, unknown>;
 
+// Parsed TOML and JSON are checked, not cast, so a malformed file reads
+// as empty instead of failing later.
+export function isTable(value: unknown): value is Toml {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function tableOf(value: unknown): Toml {
+  return isTable(value) ? value : {};
+}
+
+// The tables in a list, such as `overrides`; anything else is dropped.
+function tablesOf(value: unknown): Toml[] {
+  return Array.isArray(value) ? value.filter(isTable) : [];
+}
+
 interface Override {
   files: string[];
   excludeFiles?: string[];
@@ -47,7 +62,7 @@ export function findRoot(cwd: string): string {
 export function readBunfig(root: string): Toml {
   const path = join(root, "bunfig.toml");
   return existsSync(path)
-    ? (Bun.TOML.parse(readFileSync(path, "utf8")) as Toml)
+    ? tableOf(Bun.TOML.parse(readFileSync(path, "utf8")))
     : {};
 }
 
@@ -55,15 +70,15 @@ export function templateConfig(
   bunfig: Toml,
   defaults: Record<string, Severity>,
 ): TemplateConfig {
-  const table = (bunfig["svelte-lint"] ?? {}) as Toml;
+  const table = tableOf(bunfig["svelte-lint"]);
   const rules = { ...defaults };
-  for (const [name, value] of Object.entries((table.rules ?? {}) as Toml)) {
+  for (const [name, value] of Object.entries(tableOf(table.rules))) {
     rules[name] = severity(value);
   }
-  const overrides = ((table.overrides ?? []) as Toml[]).map((o) => ({
+  const overrides = tablesOf(table.overrides).map((o) => ({
     files: asArray(o.files),
     excludeFiles: asArray(o.excludeFiles),
-    rules: (o.rules ?? {}) as Record<string, unknown>,
+    rules: tableOf(o.rules),
   }));
   return { rules, overrides, ignorePatterns: asArray(table.ignorePatterns) };
 }
@@ -120,7 +135,7 @@ interface IgnorePattern {
  * kept.
  */
 export function lintIgnores(bunfig: Toml): (file: string) => boolean {
-  const patterns = asArray(((bunfig.lint ?? {}) as Toml).ignorePatterns);
+  const patterns = asArray(tableOf(bunfig.lint).ignorePatterns);
   const parsed: IgnorePattern[] = patterns.map((raw) => {
     let pattern = raw;
     const negated = pattern.startsWith("!");
@@ -176,9 +191,7 @@ const REPORTING = new Set([
 
 export function moduleBunfig(bunfig: Toml, root: string): string {
   const lint = Object.fromEntries(
-    Object.entries((bunfig.lint ?? {}) as Toml).filter(
-      ([key]) => !REPORTING.has(key),
-    ),
+    Object.entries(tableOf(bunfig.lint)).filter(([key]) => !REPORTING.has(key)),
   );
   if (lint.plugins) {
     lint.plugins = asArray(lint.plugins).map((p) =>
@@ -187,9 +200,7 @@ export function moduleBunfig(bunfig: Toml, root: string): string {
   }
   if (lint.ignorePatterns)
     lint.ignorePatterns = forModules(asArray(lint.ignorePatterns));
-  const overrides = (
-    (((bunfig.lint ?? {}) as Toml).overrides ?? []) as Toml[]
-  ).map((o) => ({
+  const overrides = tablesOf(tableOf(bunfig.lint).overrides).map((o) => ({
     ...o,
     files: forModules(asArray(o.files)),
     ...(o.excludeFiles
@@ -200,8 +211,8 @@ export function moduleBunfig(bunfig: Toml, root: string): string {
   let toml = "[lint]\n";
   const tables: [string, Toml][] = [];
   for (const [key, value] of Object.entries(lint)) {
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-      tables.push([key, value as Toml]);
+    if (isTable(value)) {
+      tables.push([key, value]);
     } else {
       toml += `${key} = ${tomlValue(value)}\n`;
     }

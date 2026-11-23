@@ -1,16 +1,22 @@
-import { analyzeScopes, type AST, isRunesMode, parse } from "svelte-ast";
-import { SKIP, visitorKeys, walk } from "svelte-ast/walk";
+import {
+  analyzeScopes,
+  type AST,
+  type Identifier,
+  isRunesMode,
+  parse,
+} from "svelte-ast";
+import { forEachChild, SKIP, walk } from "svelte-ast/walk";
 
 type Scopes = ReturnType<typeof analyzeScopes>;
-interface Node {
-  type: string;
-  start: number;
-  end: number;
-}
-interface Identifier extends Node {
-  type: "Identifier";
-  name: string;
-}
+type Node = AST.SvelteNode;
+// Spans are checked, since svelte-ast's node union has members without.
+type Spanned = Node & { start: number; end: number };
+
+const hasSpan = (node: Node): node is Spanned =>
+  "start" in node &&
+  typeof node.start === "number" &&
+  "end" in node &&
+  typeof node.end === "number";
 
 /**
  * A markup expression copied into the module, at `module` instead of
@@ -136,34 +142,26 @@ function isTypeScript(script: AST.Script | null): boolean {
 }
 
 /** The markup's expressions, outermost first, in source order. */
-function markupExpressions(fragment: AST.Fragment): Node[] {
-  const found: Node[] = [];
+function markupExpressions(fragment: AST.Fragment): Spanned[] {
+  const found: Spanned[] = [];
   const visit = (node: Node): void => {
-    const keys = visitorKeys[node.type as keyof typeof visitorKeys] ?? [];
-    for (const key of keys) {
-      const child = (node as unknown as Record<string, unknown>)[key];
-      if (child == null || typeof child !== "object") continue;
-      const children = (Array.isArray(child) ? child : [child]) as Node[];
-      for (const value of children) {
-        if (value == null || typeof value !== "object" || !value.type) continue;
-        if (isMarkup(value)) {
-          visit(value);
-        } else if (DECLARES.has(`${node.type}.${key}`)) {
-          // A pattern: its default values are rare enough to skip.
-        } else if (value.type === "VariableDeclaration") {
-          // `{@const a = b}`: lint `b`.
-          for (const declarator of (
-            value as unknown as { declarations: { init: Node | null }[] }
-          ).declarations) {
-            if (declarator.init) found.push(declarator.init);
-          }
-        } else {
-          found.push(value);
+    forEachChild(node, (value, key) => {
+      if (isMarkup(value)) {
+        visit(value);
+      } else if (DECLARES.has(`${node.type}.${key}`)) {
+        // A pattern: its default values are rare enough to skip.
+      } else if (value.type === "VariableDeclaration") {
+        // `{@const a = b}`: lint `b`.
+        for (const declarator of value.declarations) {
+          if (declarator.init && hasSpan(declarator.init))
+            found.push(declarator.init);
         }
+      } else if (hasSpan(value)) {
+        found.push(value);
       }
-    }
+    });
   };
-  visit(fragment as unknown as Node);
+  visit(fragment);
   return found;
 }
 
@@ -215,10 +213,9 @@ function isMarkup(node: Node): boolean {
 
 function identifiers(node: Node): Identifier[] {
   const found: Identifier[] = [];
-  walk(node as never, {
+  walk(node, {
     enter(child) {
-      if ((child as Node).type === "Identifier")
-        found.push(child as Identifier);
+      if (child.type === "Identifier") found.push(child);
     },
   });
   return found;
@@ -245,9 +242,9 @@ const FUNCTIONS = new Set([
 /** Whether `node` awaits outside the functions in it, as `{await a}` can. */
 function hasAwait(node: Node): boolean {
   let found = false;
-  walk(node as never, {
+  walk(node, {
     enter(child) {
-      const { type } = child as unknown as Node;
+      const { type } = child;
       if (type === "AwaitExpression") found = true;
       return found || FUNCTIONS.has(type) ? SKIP : undefined;
     },
@@ -332,7 +329,7 @@ export function emit(source: string, full = false): Emitted {
   for (const expression of markupExpressions(ast.fragment)) {
     const local = new Set<string>();
     for (const id of identifiers(expression)) {
-      const binding = scopes.bindingOf(id as never);
+      const binding = scopes.bindingOf(id);
       if (binding && MARKUP_KINDS.has(binding.kind)) local.add(binding.name);
     }
     // Names the markup declares, such as an each block's item, are the

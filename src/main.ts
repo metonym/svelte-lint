@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 
 import { count, select } from "./api.ts";
-import { readBunfig } from "./config.ts";
+import { readBunfig, tableOf } from "./config.ts";
 import { lint, lintAndFix } from "./lint.ts";
 import { defaultFormat, type Format, report } from "./report.ts";
 import { watchComponents } from "./watch.ts";
@@ -33,6 +33,11 @@ the template rules and a11y checks [svelte-lint] turns on.
 Exits 1 on an error, or on more warnings than --max-warnings.`;
 
 const FORMATS: readonly Format[] = ["pretty", "agent", "json", "github"];
+const isFormat = (value: string): value is Format =>
+  FORMATS.some((format) => format === value);
+
+const messageOf = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
 const WHOLE_NUMBER = /^\d+$/;
 
 function parse(argv: string[]) {
@@ -82,7 +87,7 @@ export async function main(argv: string[]): Promise<0 | 1 | 2> {
   try {
     parsed = parse(argv);
   } catch (error) {
-    console.error(`${(error as Error).message}\n\n${HELP}`);
+    console.error(`${messageOf(error)}\n\n${HELP}`);
     return 2;
   }
   const { values, positionals } = parsed;
@@ -95,8 +100,8 @@ export async function main(argv: string[]): Promise<0 | 1 | 2> {
     console.log(version);
     return 0;
   }
-  const format = (values.format ?? defaultFormat()) as Format;
-  if (!FORMATS.includes(format)) {
+  const format = values.format ?? defaultFormat();
+  if (!isFormat(format)) {
     console.error(`--format takes ${FORMATS.join(", ")}, not ${format}`);
     return 2;
   }
@@ -132,7 +137,7 @@ export async function main(argv: string[]): Promise<0 | 1 | 2> {
       changed: values.changed === "" ? true : values.changed,
     });
   } catch (error) {
-    console.error((error as Error).message);
+    console.error(messageOf(error));
     return 2;
   }
   const { root, files, paths, skipped } = selected;
@@ -176,7 +181,7 @@ export async function main(argv: string[]): Promise<0 | 1 | 2> {
   try {
     result = await run(root, files, { cache });
   } catch (error) {
-    console.error((error as Error).message);
+    console.error(messageOf(error));
     return 2;
   }
   const output = report(
@@ -189,9 +194,7 @@ export async function main(argv: string[]): Promise<0 | 1 | 2> {
   );
   if (output) console.log(output);
 
-  const lintConfig = (readBunfig(root).lint ?? {}) as {
-    maxWarnings?: number;
-  };
+  const lintConfig = tableOf(readBunfig(root).lint);
   const limit = Number(maxWarnings ?? lintConfig.maxWarnings ?? -1);
   const { errors, warnings } = count(result.diagnostics);
   return errors > 0 || (limit >= 0 && warnings > limit) ? 1 : 0;
