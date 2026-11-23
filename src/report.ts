@@ -29,7 +29,7 @@ const ANSI: Record<Style, string> = {
  * reads; `AI_AGENT`, the shared name; and `CODEX_CI` and
  * `CODEX_THREAD_ID`, which Codex sets.
  */
-export const AGENT_ENV = [
+export const AGENT_ENV: string[] = [
   "AGENT",
   "AI_AGENT",
   "CLAUDECODE",

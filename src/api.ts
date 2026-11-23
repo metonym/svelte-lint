@@ -113,7 +113,12 @@ function located(found: Found[], sources: Map<string, string>): Diagnostic[] {
   return locate(found, sources).map(({ lines: _, ...d }) => d);
 }
 
-export const count = (diagnostics: readonly { severity: string }[]) => {
+export const count = (
+  diagnostics: readonly { severity: string }[],
+): {
+  errors: number;
+  warnings: number;
+} => {
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   return { errors, warnings: diagnostics.length - errors };
 };
