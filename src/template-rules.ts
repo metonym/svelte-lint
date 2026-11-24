@@ -167,8 +167,8 @@ export const templateRules: Record<string, TemplateRule> = {
 };
 
 /**
- * Runs the template rules that are on, `severity` by name, over one
- * component.
+ * Runs the template rules that are on, `severity` by name, over
+ * one component.
  */
 export function lintTemplate(
   file: string,

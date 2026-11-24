@@ -20,8 +20,8 @@ export interface Diagnostic {
   /**
    * The rule: a `[lint]` rule `bun lint` reported, such as `no-unused-vars`,
    * a template rule, such as `svelte/require-each-key`, or a compiler
-   * warning, such as `svelte/a11y_missing_attribute`. `null` for a syntax
-   * error.
+   * warning, such as `svelte/a11y_missing_attribute`. `null` for a
+   * syntax error.
    */
   rule: string | null;
   severity: "error" | "warn";
@@ -95,8 +95,8 @@ export interface WatchUpdate {
    */
   stage: "template" | "done" | "removed";
   /**
-   * Why it ran: the first run, a changed component, or a changed
-   * `bunfig.toml`.
+   * Why it ran: the first run, a changed component, or a
+   * changed `bunfig.toml`.
    */
   reason: "start" | "change" | "config";
   /** The components this update is about. */

@@ -106,8 +106,8 @@ export async function select(
 }
 
 /**
- * Problems with lines and columns, without the frame's lines `report`
- * keeps.
+ * Problems with lines and columns, without the frame's lines
+ * `report` keeps.
  */
 function located(found: Found[], sources: Map<string, string>): Diagnostic[] {
   return locate(found, sources).map(({ lines: _, ...d }) => d);

@@ -27,8 +27,8 @@ interface Override {
 }
 
 /**
- * The `[svelte-lint]` table: the template rules, which `bun lint` doesn't
- * know.
+ * The `[svelte-lint]` table: the template rules, which `bun lint`
+ * doesn't know.
  */
 interface TemplateConfig {
   rules: Record<string, Severity>;
@@ -131,8 +131,8 @@ interface IgnorePattern {
  * `bun lint` reads them, like a `.gitignore`: a pattern without a slash
  * matches a file or folder name at any depth, one with a slash matches
  * from the root, a trailing slash matches folders only, a later `!pattern`
- * keeps what an earlier one skipped, and nothing in a skipped folder is
- * kept.
+ * keeps what an earlier one skipped, and nothing in a skipped folder
+ * is kept.
  */
 export function lintIgnores(bunfig: Toml): (file: string) => boolean {
   const patterns = asArray(tableOf(bunfig.lint).ignorePatterns);
@@ -165,8 +165,8 @@ export function lintIgnores(bunfig: Toml): (file: string) => boolean {
 
 /**
  * Patterns that name `.svelte` files, for the modules that stand in for
- * them: `src/**\/*.svelte` also matches `src/A.svelte.js` and
- * `src/B.svelte.ts`.
+ * them: `src/**\/*.svelte` also matches `src/A.svelte.js`
+ * and `src/B.svelte.ts`.
  */
 function forModules(patterns: string[]): string[] {
   return patterns.flatMap((pattern) =>

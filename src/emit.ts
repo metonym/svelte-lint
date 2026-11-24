@@ -19,8 +19,8 @@ const hasSpan = (node: Node): node is Spanned =>
   typeof node.end === "number";
 
 /**
- * A markup expression copied into the module, at `module` instead of
- * `source`.
+ * A markup expression copied into the module, at `module` instead
+ * of `source`.
  */
 export interface Segment {
   module: number;
@@ -29,8 +29,8 @@ export interface Segment {
 }
 
 /**
- * A component as a JavaScript or TypeScript module that `bun lint` can
- * read.
+ * A component as a JavaScript or TypeScript module that `bun lint`
+ * can read.
  *
  * Its `<script>`s keep their offsets: everything around them is blanked
  * to spaces, line breaks kept, so a problem in a script is at the same

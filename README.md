@@ -64,8 +64,8 @@ against Biome 2.6's `.svelte` linting:
 | One component (`--staged`) | 0.35s, 351 MB | 0.06s, 32 MB                          |
 | `--watch`, one save        |               | 45ms to the first output, 70ms in all |
 
-ESLint with eslint-plugin-svelte took about 21s for the same components,
-cold.
+ESLint with eslint-plugin-svelte took about 21s for the same
+components, cold.
 
 Moving from Biome?
 [docs/biome.md](https://github.com/metonym/svelte-lint/blob/master/docs/biome.md)
@@ -169,8 +169,8 @@ so the same code anywhere else is still reported:
 | `no-unused-vars`   | `$$Props`, `$$Events` and `$$Slots`                                                       |
 
 What the markup reads and writes counts too: a variable `bind:`
-writes isn't `prefer-const`, and an import only the markup uses isn't
-unused.
+writes isn't `prefer-const`, and an import only the markup uses
+isn't unused.
 
 ## API
 
@@ -207,8 +207,8 @@ that `$count` reads `count`, and the names Svelte declares.
 and each problem and fix maps back to the component.
 The folder links to the rest of the project,
 so rules that resolve imports, such as `import/no-cycle`
-and `import/no-unresolved`, see the same files and packages as in the
-project.
+and `import/no-unresolved`, see the same files
+and packages as in the project.
 The template rules and a11y checks run on the same parse,
 by [svelte-ast](https://github.com/metonym/svelte-ast),
 which is bundled, so the package has no dependencies.

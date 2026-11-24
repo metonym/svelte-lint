@@ -17,8 +17,8 @@ export interface Job {
 }
 
 /**
- * What svelte-lint learns about a component, as plain data, so its AST can
- * go.
+ * What svelte-lint learns about a component, as plain data, so its AST
+ * can go.
  */
 export interface Analysis {
   file: string;
@@ -31,13 +31,13 @@ export interface Analysis {
     facts: Facts;
   };
   /**
-   * Every template rule's problems, as errors; the main thread applies the
-   * config.
+   * Every template rule's problems, as errors; the main thread applies
+   * the config.
    */
   template: Diagnostic[];
   /**
-   * The Svelte compiler's a11y warnings, from svelte-ast's port of its
-   * checks.
+   * The Svelte compiler's a11y warnings, from svelte-ast's port of
+   * its checks.
    */
   a11y: CompilerWarning[];
   /**

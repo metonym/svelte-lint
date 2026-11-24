@@ -126,8 +126,8 @@ export async function startScriptLint(
         unlinkSync(link);
     }),
   );
-  // Per process too: another run, such as `--watch`, may lint the same
-  // project.
+  // Per process too: another run, such as `--watch`, may lint the
+  // same project.
   const report = join(dir, `.report-${process.pid}-${id}.json`);
   rmSync(report, { force: true });
   const child = Bun.spawn(
@@ -241,8 +241,8 @@ const TYPESCRIPT_ESLINT = /^@typescript-eslint\//;
 const RULE = (id: string | null): string =>
   (id ?? "").replace(TYPESCRIPT_ESLINT, "");
 
-// The props, events and slots of a TypeScript component, which Svelte
-// reads.
+// The props, events and slots of a TypeScript component, which
+// Svelte reads.
 const SVELTE_TYPES = new Set(["$$Props", "$$Events", "$$Slots"]);
 
 /**

@@ -52,8 +52,8 @@ export function defaultFormat(
 }
 
 /**
- * Each problem with its lines and columns, and its file's lines for a
- * frame.
+ * Each problem with its lines and columns, and its file's lines for
+ * a frame.
  */
 export function locate(
   diagnostics: Diagnostic[],
