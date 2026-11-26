@@ -136,6 +136,7 @@ rules = { "svelte/require-each-key" = "error" }
 
 | Rule                                       | Default | Reports                                                                                                                                              |
 | :----------------------------------------- | :------ | :--------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `svelte/no-effect-self-update` | warn | A write to a `$state` in an `$effect` that also reads it, outside `untrack`, so the effect runs again after each write, until Svelte stops it with `effect_update_depth_exceeded`. A write whose branch resets the state its guard reads is left out |
 | `svelte/require-each-key`                  | error   | An `{#each}` with an item and no key                                                                                                                 |
 | `svelte/no-bind-value-on-checkable-inputs` | error   | `bind:value` on a checkbox or a radio; fixes a checkbox's to `bind:checked`                                                                          |
 | `svelte/button-has-type`                   | error   | A `<button>` without a `type`, which submits a form it's in                                                                                          |

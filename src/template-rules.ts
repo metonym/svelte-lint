@@ -2,6 +2,7 @@ import type { AST } from "svelte-ast";
 import { markupVisitorKeys, walk } from "svelte-ast/walk";
 
 import type { Diagnostic, Fix } from "./diagnostic.ts";
+import { effectSelfUpdates } from "./effect-rules.ts";
 import type { Emitted } from "./emit.ts";
 
 type Element = AST.RegularElement | AST.SvelteElement | AST.Component;
@@ -19,8 +20,12 @@ interface Context {
 
 interface TemplateRule {
   description: string;
+  /** Its default severity; `error` unless set. */
+  level?: "warn";
   check(element: Element, context: Context): void;
   each?(block: AST.EachBlock, context: Context): void;
+  /** Called once per component, for a rule that reads its script. */
+  component?(context: Context): void;
 }
 
 function attribute(element: Element, name: string): AST.Attribute | undefined {
@@ -79,6 +84,26 @@ function isFocusable(element: Element): boolean {
 
 /** Rules for the markup, which a linter for JavaScript can't see. */
 export const templateRules: Record<string, TemplateRule> = {
+  "svelte/no-effect-self-update": {
+    description:
+      "Don't write a `$state` in an `$effect` that also reads it: the effect runs again after each write.",
+    level: "warn",
+    check() {},
+    component(context) {
+      if (!context.emitted.runes) return;
+      for (const { node, name } of effectSelfUpdates(
+        context.emitted.ast,
+        context.emitted.scopes,
+      )) {
+        context.report(
+          node,
+          `This $effect writes ${name}, which it also reads, so it runs again after each write.`,
+          undefined,
+          `Read ${name} with untrack(() => ${name}), or compute it with $derived.`,
+        );
+      }
+    },
+  },
   "svelte/require-each-key": {
     description:
       "Key `{#each}` blocks, so Svelte moves rows instead of rewriting them.",
@@ -200,6 +225,7 @@ export function lintTemplate(
     };
     return { rule, context };
   });
+  for (const { rule, context } of contexts) rule.component?.(context);
   walk(
     emitted.ast.fragment,
     {

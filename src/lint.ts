@@ -26,7 +26,10 @@ const PER_BATCH = 200;
  */
 const DEFAULT_RULES: Record<string, Severity> = {
   ...Object.fromEntries(
-    Object.keys(templateRules).map((name) => [name, "error"]),
+    Object.entries(templateRules).map(([name, rule]) => [
+      name,
+      rule.level ?? "error",
+    ]),
   ),
   "svelte/a11y": "error",
   // Warnings, as Svelte reports them.
