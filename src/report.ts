@@ -38,17 +38,24 @@ export const AGENT_ENV: string[] = [
 ];
 
 /**
- * `agent` when an `AGENT_ENV` variable is set to a value other than
+ * The format when `--format` isn't given: `SVELTE_LINT_FORMAT` when set,
+ * else `agent` when an `AGENT_ENV` variable is set to a value other than
  * empty or `0`, as `bun lint` reads its own, else `pretty`.
+ * `agentVariable` names the variable that chose `agent`, for the line
+ * saying so.
  */
 export function defaultFormat(
   env: Record<string, string | undefined> = process.env,
-): Format {
-  const agent = AGENT_ENV.some((name) => {
+): { format: string; agentVariable?: string } {
+  const chosen = env.SVELTE_LINT_FORMAT;
+  if (chosen !== undefined && chosen !== "") return { format: chosen };
+  const agentVariable = AGENT_ENV.find((name) => {
     const value = env[name];
     return value !== undefined && value !== "" && value !== "0";
   });
-  return agent ? "agent" : "pretty";
+  return agentVariable
+    ? { format: "agent", agentVariable }
+    : { format: "pretty" };
 }
 
 /**

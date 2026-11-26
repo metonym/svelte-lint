@@ -21,8 +21,9 @@ the template rules and a11y checks [svelte-lint] turns on.
                         changes
   --format <name>       pretty, agent, json or github (default: agent for a
                         coding agent: AGENT, AI_AGENT, CLAUDECODE,
-                        CODEX_CI or CODEX_THREAD_ID set, and not to 0;
-                        else pretty)
+                        CODEX_CI or CODEX_THREAD_ID set, and not to 0,
+                        which it says on stderr; else pretty;
+                        SVELTE_LINT_FORMAT sets another)
   --max-warnings <n>    Exit 1 on more warnings than this (default: [lint]'s
                         maxWarnings)
   --no-cache            Lint every component, and keep no cache
@@ -100,7 +101,13 @@ export async function main(argv: string[]): Promise<0 | 1 | 2> {
     console.log(version);
     return 0;
   }
-  const format = values.format ?? defaultFormat();
+  const chosen = values.format === undefined ? defaultFormat() : undefined;
+  const format = values.format ?? chosen?.format ?? "pretty";
+  if (chosen?.agentVariable) {
+    console.error(
+      `svelte-lint: ${chosen.agentVariable} is set, so --format agent; pass --format or set SVELTE_LINT_FORMAT for another.`,
+    );
+  }
   if (!isFormat(format)) {
     console.error(`--format takes ${FORMATS.join(", ")}, not ${format}`);
     return 2;
