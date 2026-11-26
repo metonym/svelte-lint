@@ -34,6 +34,8 @@ interface TemplateConfig {
   rules: Record<string, Severity>;
   overrides: Override[];
   ignorePatterns: string[];
+  /** Severities a run sets with `--rule`, over the overrides. */
+  forced?: Record<string, Severity>;
 }
 
 function asArray(value: unknown): string[] {
@@ -102,7 +104,51 @@ export function rulesFor(
       rules[name] = severity(value);
     }
   }
-  return rules;
+  return { ...rules, ...config.forced };
+}
+
+const RULE = /^\s*([^:\s]+)\s*:\s*(.+?)\s*$/;
+const LEVEL = /^\[?\s*(error|warn|off|0|1|2)\b/;
+
+// `--rule` values (`name: severity`, as `bun lint` takes them) split into
+// the template rules' severities, which svelte-lint applies itself, and
+// the rest, which go to `bun lint`. `known` names the template rules; a
+// `svelte/` name outside it throws, as does a value without a severity.
+export function splitRules(
+  values: readonly string[],
+  known: readonly string[],
+): { template: Record<string, Severity>; script: string[] } {
+  const template: Record<string, Severity> = {};
+  const script: string[] = [];
+  for (const value of values) {
+    const match = RULE.exec(value);
+    const name = match?.[1];
+    const setting = match?.[2];
+    if (!name || !setting) {
+      throw new Error(
+        `--rule takes "name: severity", as bun lint does, not ${JSON.stringify(value)}`,
+      );
+    }
+    if (!name.startsWith("svelte/")) {
+      script.push(value);
+      continue;
+    }
+    if (!known.includes(name)) {
+      throw new Error(
+        `--rule names ${name}, which isn't a svelte-lint rule: ${known.join(", ")}`,
+      );
+    }
+    const level = LEVEL.exec(setting)?.[1];
+    if (level === undefined) {
+      throw new Error(
+        `--rule ${name} takes error, warn or off, not ${JSON.stringify(setting)}`,
+      );
+    }
+    template[name] = severity(
+      Number.isNaN(Number(level)) ? level : Number(level),
+    );
+  }
+  return { template, script };
 }
 
 const globs = new Map<string, InstanceType<typeof Bun.Glob>>();

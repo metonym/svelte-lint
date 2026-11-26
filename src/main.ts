@@ -3,7 +3,7 @@ import { parseArgs } from "node:util";
 
 import { count, select } from "./api.ts";
 import { readBunfig, tableOf } from "./config.ts";
-import { lint, lintAndFix } from "./lint.ts";
+import { checkRules, lint, lintAndFix } from "./lint.ts";
 import { defaultFormat, type Format, report } from "./report.ts";
 import { watchComponents } from "./watch.ts";
 
@@ -24,6 +24,11 @@ the template rules and a11y checks [svelte-lint] turns on.
                         CODEX_CI or CODEX_THREAD_ID set, and not to 0,
                         which it says on stderr; else pretty;
                         SVELTE_LINT_FORMAT sets another)
+  --rule <name: level>  Set a rule for this run, as bun lint takes it:
+                        --rule 'eqeqeq: [error, smart]'; a svelte/ rule
+                        sets that template rule. Repeatable
+  --quiet               Report errors only
+  --list-files          Print the components a run would lint, and exit
   --max-warnings <n>    Exit 1 on more warnings than this (default: [lint]'s
                         maxWarnings)
   --no-cache            Lint every component, and keep no cache
@@ -54,6 +59,9 @@ function parse(argv: string[]) {
       watch: { type: "boolean" },
       format: { type: "string" },
       "max-warnings": { type: "string" },
+      rule: { type: "string", multiple: true },
+      quiet: { type: "boolean" },
+      "list-files": { type: "boolean" },
       "no-cache": { type: "boolean" },
       color: { type: "boolean" },
       "no-color": { type: "boolean" },
@@ -122,6 +130,12 @@ export async function main(argv: string[]): Promise<0 | 1 | 2> {
     console.error("--staged and --changed each pick the components: use one.");
     return 2;
   }
+  try {
+    checkRules(values.rule ?? []);
+  } catch (error) {
+    console.error(messageOf(error));
+    return 2;
+  }
   const maxWarnings = values["max-warnings"];
   if (maxWarnings != null && !WHOLE_NUMBER.test(maxWarnings)) {
     console.error(
@@ -135,6 +149,12 @@ export async function main(argv: string[]): Promise<0 | 1 | 2> {
       process.stdout.isTTY === true &&
       !process.env.NO_COLOR);
   const cache = !values["no-cache"];
+  // Warnings are neither printed nor counted, as with bun lint's
+  // --quiet, so a quiet run can't fail on --max-warnings.
+  const quiet = <D extends { severity: string }>(diagnostics: D[]): D[] =>
+    values.quiet
+      ? diagnostics.filter((d) => d.severity === "error")
+      : diagnostics;
   const started = performance.now();
 
   let selected: Awaited<ReturnType<typeof select>>;
@@ -148,6 +168,11 @@ export async function main(argv: string[]): Promise<0 | 1 | 2> {
     return 2;
   }
   const { root, files, paths, skipped } = selected;
+  if (values["list-files"]) {
+    if (files.length > 0) console.log(files.join("\n"));
+    return 0;
+  }
+  const rules = values.rule ?? [];
   for (const { path, reason } of skipped) {
     console.error(
       reason === "ignored"
@@ -162,9 +187,10 @@ export async function main(argv: string[]): Promise<0 | 1 | 2> {
       files,
       paths,
       cache,
+      rules,
       onUpdate: (update) => {
         const out = report(
-          update.diagnostics,
+          quiet(update.diagnostics),
           update.sources,
           format,
           color,
@@ -186,13 +212,14 @@ export async function main(argv: string[]): Promise<0 | 1 | 2> {
   const run = values.fix ? lintAndFix : lint;
   let result: Awaited<ReturnType<typeof run>>;
   try {
-    result = await run(root, files, { cache });
+    result = await run(root, files, { cache, rules });
   } catch (error) {
     console.error(messageOf(error));
     return 2;
   }
+  const diagnostics = quiet(result.diagnostics);
   const output = report(
-    result.diagnostics,
+    diagnostics,
     result.sources,
     format,
     color,
@@ -203,6 +230,6 @@ export async function main(argv: string[]): Promise<0 | 1 | 2> {
 
   const lintConfig = tableOf(readBunfig(root).lint);
   const limit = Number(maxWarnings ?? lintConfig.maxWarnings ?? -1);
-  const { errors, warnings } = count(result.diagnostics);
+  const { errors, warnings } = count(diagnostics);
   return errors > 0 || (limit >= 0 && warnings > limit) ? 1 : 0;
 }

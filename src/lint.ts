@@ -7,6 +7,7 @@ import {
   lintIgnores,
   rulesFor,
   type Severity,
+  splitRules,
   tableOf,
   templateConfig,
 } from "./config.ts";
@@ -56,22 +57,35 @@ export interface Session {
   bunfig: Record<string, unknown>;
   config: ReturnType<typeof templateConfig>;
   key: string;
+  /** `--rule` values for `bun lint`. */
+  scriptRules: string[];
   cache: Record<string, Entry>;
+}
+
+// Throws for a `--rule` value svelte-lint can't apply, before any work.
+export function checkRules(rules: readonly string[]): void {
+  splitRules(rules, Object.keys(DEFAULT_RULES));
 }
 
 export function openSession(
   root: string,
-  options: { cache: boolean } = { cache: true },
+  options: { cache: boolean; rules?: readonly string[] } = { cache: true },
 ): Session {
   const bunfigPath = join(root, "bunfig.toml");
   const bunfigText = existsSync(bunfigPath)
     ? readFileSync(bunfigPath, "utf8")
     : "";
   const bunfig = tableOf(Bun.TOML.parse(bunfigText));
-  const key = cacheKey(bunfigText);
+  const { template, script } = splitRules(
+    options.rules ?? [],
+    Object.keys(DEFAULT_RULES),
+  );
+  // The rules a run sets change its problems, so they're part of the key.
+  const key = cacheKey([bunfigText, ...(options.rules ?? [])].join("\0"));
   return {
     bunfig,
-    config: templateConfig(bunfig, DEFAULT_RULES),
+    config: { ...templateConfig(bunfig, DEFAULT_RULES), forced: template },
+    scriptRules: script,
     key,
     cache: options.cache ? loadCache(root, key) : {},
   };
@@ -79,6 +93,8 @@ export function openSession(
 
 export interface LintOptions {
   cache: boolean;
+  /** `--rule` values, `name: severity`, over bunfig.toml's. */
+  rules?: readonly string[];
   /** Reuse the config and cache of earlier runs. */
   session?: Session;
   /**
@@ -108,7 +124,7 @@ export async function lint(
   options: LintOptions = { cache: true },
 ): Promise<LintResult> {
   const session = options.session ?? openSession(root, options);
-  const { bunfig, config, key, cache } = session;
+  const { bunfig, config, key, cache, scriptRules: extraRules } = session;
 
   const sources = new Map<string, string>();
   const meta = new Map<string, { hash: string; size: number; mtime: number }>();
@@ -198,7 +214,12 @@ export async function lint(
         : [],
     );
     // eslint-disable-next-line no-await-in-loop -- awaits the writes and the spawn, not the lint
-    const lintStarted = await scriptRules.startScriptLint(root, components, n);
+    const lintStarted = await scriptRules.startScriptLint(
+      root,
+      components,
+      n,
+      extraRules,
+    );
     started.push(lintStarted);
   }
   options.onTemplate?.(

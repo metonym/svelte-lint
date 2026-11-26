@@ -100,6 +100,7 @@ export async function startScriptLint(
   root: string,
   components: Component[],
   id = 0,
+  rules: readonly string[] = [],
 ): Promise<{ done: Promise<Map<string, Diagnostic[]>> }> {
   const byFile = new Map<string, Diagnostic[]>(
     components.map((c) => [c.file, []]),
@@ -138,6 +139,7 @@ export async function startScriptLint(
       "--no-script",
       "--format=json",
       `--output-file=${report}`,
+      ...rules.map((rule) => `--rule=${rule}`),
       ...byModule.keys(),
     ],
     { cwd: dir, stdout: "pipe", stderr: "pipe" },

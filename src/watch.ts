@@ -40,6 +40,8 @@ interface WatchOptions {
   /** Only components under these paths, relative to `root`, if any. */
   paths: string[];
   cache: boolean;
+  /** `--rule` values, `name: severity`. */
+  rules?: readonly string[];
   onUpdate: (update: Update) => void;
 }
 
@@ -61,7 +63,10 @@ export async function watchComponents(
   options: WatchOptions,
 ): Promise<{ close: () => void }> {
   const { root, paths, onUpdate } = options;
-  const lintOptions: LintOptions = { cache: options.cache };
+  const lintOptions: LintOptions = {
+    cache: options.cache,
+    ...(options.rules && { rules: options.rules }),
+  };
   let session: Session = openSession(root, lintOptions);
   const files = new Set(options.files);
   const byFile = new Map<string, Diagnostic[]>();
