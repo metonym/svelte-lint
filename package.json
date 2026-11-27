@@ -1,6 +1,6 @@
 {
   "name": "svelte-lint",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "The Svelte linter for bun lint, with zero dependencies.",
   "license": "MIT",
   "author": "Eric Liu (https://github.com/metonym)",
