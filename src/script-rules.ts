@@ -119,7 +119,14 @@ export async function startScriptLint(
   // there's no modification time to preserve by skipping unchanged ones.
   await Promise.all(
     [...byModule].map(async ([path, component]) => {
-      await Bun.write(join(dir, path), component.module.code);
+      const module = join(dir, path);
+      // A link here is a project file whose name differs only in case,
+      // `counter.svelte.ts` beside `Counter.svelte`, on a file system that
+      // ignores case, as macOS's does: writing through it would replace the
+      // project's file.
+      if (lstatSync(module, { throwIfNoEntry: false })?.isSymbolicLink())
+        unlinkSync(module);
+      await Bun.write(module, component.module.code);
       // The link `mirror` made stands in for the module until now. Only
       // ever a link: the component itself is in the project.
       const link = join(dir, component.file);
